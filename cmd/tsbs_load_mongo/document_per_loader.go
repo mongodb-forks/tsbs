@@ -67,7 +67,7 @@ func (p *naiveProcessor) ProcessBatch(b targets.Batch, doLoad bool) (uint64, uin
 			x := spPool.Get().(*singlePoint)
 			(*x)["measurement"] = string(event.MeasurementName())
 			(*x)[timestampField] = time.Unix(0, event.Timestamp())
-			(*x)["tags"] = map[string]string{}
+			(*x)["tags"] = map[string]interface{}{}
 			f := &tsbsMongo.MongoReading{}
 			for j := 0; j < event.FieldsLength(); j++ {
 				event.Fields(f, j)
@@ -76,7 +76,7 @@ func (p *naiveProcessor) ProcessBatch(b targets.Batch, doLoad bool) (uint64, uin
 			t := &tsbsMongo.MongoTag{}
 			for j := 0; j < event.TagsLength(); j++ {
 				event.Tags(t, j)
-				(*x)["tags"].(map[string]string)[string(t.Key())] = string(t.Value())
+				parseTag((*x)["tags"].(map[string]interface{}), t)
 			}
 			p.pvs[i] = x
 			metricCnt += uint64(event.FieldsLength())
@@ -95,7 +95,8 @@ func (p *naiveProcessor) ProcessBatch(b targets.Batch, doLoad bool) (uint64, uin
 			tags := bson.D{}
 			for j := 0; j < event.TagsLength(); j++ {
 				event.Tags(t, j)
-				tags = append(tags, bson.E{string(t.Key()), string(t.Value())})
+				bbson, success := parseTagAsBson(t)
+				if(success == true) { tags = append(tags, bbson) }
 			}
 			x = append(x, bson.E{"tags", tags})
 			p.pvs[i] = x
