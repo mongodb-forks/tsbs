@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/devops"
+	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/iot"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/uses/finance"
 	"github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
 	"github.com/timescale/tsbs/pkg/query"
@@ -52,5 +53,19 @@ func (g *BaseGenerator) NewFinance(start, end time.Time, scale int) (utils.Query
 	return &Finance{
 		BaseGenerator: g,
 		Core: core,
+	}, nil
+}
+
+// NewIoT creates a new iot use case query generator.
+func (g *BaseGenerator) NewIoT(start, end time.Time, scale int) (utils.QueryGenerator, error) {
+	core, err := iot.NewCore(start, end, scale)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &IoT{
+		BaseGenerator: g,
+		Core:          core,
 	}, nil
 }
