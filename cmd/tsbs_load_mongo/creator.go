@@ -150,6 +150,10 @@ func (d *dbCreator) Close() {
 	}
 
 	err := d.client.Database("admin").RunCommand(context.Background(), serverStatusCmd).Decode(&result)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 	if err == nil {
 		fmt.Println(result)
 	}
