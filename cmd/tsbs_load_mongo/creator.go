@@ -142,5 +142,17 @@ func (d *dbCreator) CreateDB(dbName string) error {
 }
 
 func (d *dbCreator) Close() {
+	serverStatusCmd := make(bson.D, 0, 4)
+	serverStatusCmd = append(serverStatusCmd, bson.E{"serverStatus", 1})
+
+	var result struct {
+		BucketCatalog bson.Raw
+	}
+
+	err := d.client.Database("admin").RunCommand(context.Background(), serverStatusCmd).Decode(&result)
+	if err == nil {
+		fmt.Println(result)
+	}
+
 	d.client.Disconnect(context.Background())
 }
