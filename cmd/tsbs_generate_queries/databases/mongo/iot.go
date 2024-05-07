@@ -184,16 +184,6 @@ func (i *IoT) TrucksWithHighLoad(qi query.Query) {
 				},
 			},
 		}},
-		/*
-				output: {
-					
-					
-					}
-				}
-			}
-		} },
-] )
-		*/
 		{{
 			"$group", bson.M{
 				"_id": "$tags.name",
@@ -224,6 +214,58 @@ func (i *IoT) TrucksWithHighLoad(qi query.Query) {
 	}
 	humanLabel := "MongoDB trucks with high load in a fleet"
 	humanDesc := fmt.Sprintf("%s: fleet: (%s)", humanLabel, fleet)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
+}
+
+func (i *IoT) StationaryTrucks(qi query.Query) {
+	interval := i.Interval.MustRandWindow(iot.StationaryDuration)
+	start := interval.Start()
+	// start := interval.Start().Format(goTimeFmt)
+	// end := interval.End().Format(goTimeFmt)
+	end := interval.End()
+	fleet := i.GetRandomFleet()
+	
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "readings",
+				"tags.fleet": fleet,
+				"time": bson.M{"$gte": start, "$lt": end },
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$tags.name",
+					"driver": "$tags.driver",
+					"fleet": "$tags.fleet",
+					"bucket": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$time",
+							"unit": "minute",
+							"binSize": 10,
+						},
+					},
+				},
+				"avg_velocity": bson.M{
+					"$avg": "$velocity",
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"avg_velocity": bson.M{"$lte": 1.0},
+			},
+		}},
+	}
+
+	humanLabel := "MongoDB stationary trucks (trucks with low velocity)"
+	humanDesc := fmt.Sprintf("%s: (%s) in [%v, %v]", humanLabel, fleet, start, end)
 
 	q := qi.(*query.Mongo)
 	q.HumanLabel = []byte(humanLabel)
