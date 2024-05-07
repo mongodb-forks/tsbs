@@ -24,6 +24,15 @@ func init() {
 	gob.Register([]bson.M{})
 }
 
+// tenMinutePeriods calculates the number of 10 minute periods that can fit in
+// the time duration if we subtract the minutes specified by minutesPerHour value.
+// E.g.: 4 hours - 5 minutes per hour = 3 hours and 40 minutes = 22 ten minute periods
+func tenMinutePeriods(minutesPerHour float64, duration time.Duration) int {
+	durationMinutes := duration.Minutes()
+	leftover := minutesPerHour * duration.Hours()
+	return int((durationMinutes - leftover) / 10)
+}
+
 func (i *IoT) getTrucksFilterArray(nTrucks int) []string {
 	names, err := i.GetRandomTrucks(nTrucks)
 	panicIfErr(err)
@@ -410,11 +419,39 @@ func (i *IoT) TrucksWithLongDailySessions(qi query.Query) {
 	q.HumanDescription = []byte(humanDesc)
 }
 
-// tenMinutePeriods calculates the number of 10 minute periods that can fit in
-// the time duration if we subtract the minutes specified by minutesPerHour value.
-// E.g.: 4 hours - 5 minutes per hour = 3 hours and 40 minutes = 22 ten minute periods
-func tenMinutePeriods(minutesPerHour float64, duration time.Duration) int {
-	durationMinutes := duration.Minutes()
-	leftover := minutesPerHour * duration.Hours()
-	return int((durationMinutes - leftover) / 10)
+
+// AvgVsProjectedFuelConsumption calculates average and projected fuel consumption per fleet.
+func (i *IoT) AvgVsProjectedFuelConsumption(qi query.Query) {
+	fleet := i.GetRandomFleet()
+
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "readings",
+				"tags.name": bson.M{ "$ne": nil },
+				"tags.nominal_fuel_consumption": bson.M{ "$ne": nil },
+				"velocity": bson.M{"$gt": 1.0},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": "$tags.fleet",
+				"mean_fuel_consumption": bson.M{
+					"$avg": "$fuel_consumption",
+				},
+				"nominal_fuel_consumption": bson.M{
+					"$avg": "$tags.nominal_fuel_consumption",
+				},
+			},
+		}},
+	}
+
+	humanLabel := "MongoDB average vs projected fuel consumption per fleet"
+	humanDesc := fmt.Sprintf("%s: in fleet (%s)", humanLabel, fleet)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
 }
