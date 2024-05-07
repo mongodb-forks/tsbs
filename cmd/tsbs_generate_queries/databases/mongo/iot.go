@@ -455,3 +455,71 @@ func (i *IoT) AvgVsProjectedFuelConsumption(qi query.Query) {
 	q.CollectionName = []byte("point_data")
 	q.HumanDescription = []byte(humanDesc)
 }
+
+// AvgDailyDrivingDuration finds the average driving duration per driver.
+func (i *IoT) AvgDailyDrivingDuration(qi query.Query) {
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "readings",
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"fleet": "$tags.fleet",
+					"name": "$tags.name",
+					"driver": "$tags.driver",
+					"bucket": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$time",
+							"unit": "minute",
+							"binSize": 10,
+						},
+					},
+				},
+				"mv": bson.M{ "$avg": "$velocity" },
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"mv": bson.M{ "$gt": 1 },
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"fleet": "$_id.fleet",
+					"name": "$_id.name",
+					"driver": "$_id.driver",
+					"day": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$_id.bucket",
+							"unit": "day",
+							"binSize": 1,
+						},
+					},
+				},
+				"ten_min_per_day": bson.M{
+					"$count": bson.M{},
+				},
+			},
+		}},
+		{{
+			"$addFields", bson.M{
+				"hours_per_day": bson.M{
+					"$divide": bson.A{ "$ten_min_per_day", 6 },
+				},
+			},
+		}},
+	}
+
+	humanLabel := "MongoDB average driver driving duration per day"
+	humanDesc := humanLabel
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)	
+}
