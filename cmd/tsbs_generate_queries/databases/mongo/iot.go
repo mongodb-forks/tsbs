@@ -114,35 +114,55 @@ func (i *IoT) LastLocPerTruck(qi query.Query) {
 			},
 		}},
 	}
-	/*
-db.point_data.aggregate(
-    [
-			{ $match: {
-				$and: [
-					{ "tags.fleet": "South" },
-					{ "tags.name": { $ne: null } },
-					{ "measurement": "readings" }
-				]
-			} },
-			{ $group: {
-				_id: "$tags.name",
-				output: {
-					$top: {
-					sortBy: {time: -1},
-					output: {
-					longitude: "$longitude",
-					latitude: "$latitude",
-					time: "$time",
-					driver: "$tags.driver"
-				}
-        	}
-        }}
-    ])
-
-
-	*/
 
 	humanLabel := "MongoDB last location for each truck"
+	humanDesc := fmt.Sprintf("%s: fleet: (%s)", humanLabel, fleet)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
+}
+
+// TrucksWithLowFuel finds all trucks with low fuel (less than 10%).
+func (i *IoT) TrucksWithLowFuel(qi query.Query) {
+	fleet := i.GetRandomFleet()
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"$and": []bson.M{
+					bson.M{ "tags.fleet": fleet },
+					bson.M{ "tags.name": bson.M{ "$ne": nil } },
+					bson.M{ "measurement": "diagnostics" },
+				},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": "$tags.name",
+				"output": bson.M{
+					"$top": bson.M{
+						"sortBy": bson.M{ "time" : -1},
+						"output": bson.M{
+							"driver": "$tags.driver",
+							"time": "$time",
+							"fleet": "$tags.fleet",
+							"fuel": "$fuel_state",
+						},
+					},
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"output.fuel": bson.M{
+					"$lte": 0.1,
+				},
+			},
+		}},
+	}
+	humanLabel := "MongoDB trucks with low fuel in a fleet"
 	humanDesc := fmt.Sprintf("%s: fleet: (%s)", humanLabel, fleet)
 
 	q := qi.(*query.Mongo)
