@@ -523,3 +523,47 @@ func (i *IoT) AvgDailyDrivingDuration(qi query.Query) {
 	q.CollectionName = []byte("point_data")
 	q.HumanDescription = []byte(humanDesc)	
 }
+
+// AvgDailyDrivingSession finds the average driving session without stopping per driver per day.
+/* FIXME
+func (i *IoT) AvgDailyDrivingSession(qi query.Query) {
+}
+*/
+
+// AvgLoad finds the average load per truck model per fleet.
+func (i *IoT) AvgLoad(qi query.Query) {
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "diagnostics",
+				"tags.model": bson.M{ "$ne" : nil},
+				"tags.fleet": bson.M{ "$ne" : nil},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"fleet": "$tags.fleet",
+					"model": "$tags.model",
+				},
+				"avg_load": bson.M{ "$avg": "$current_load"},
+				"capacity": bson.M{ "$first": "$tags.load_capacity"},
+			}
+		}},
+		{{
+			"$addFields", bson.M{
+				"avg_load_ratio": bson.M{
+					"$divide": bson.A{"$avg_load", "$capacity"},
+				},
+			},
+		}}
+	}
+	humanLabel := "MongoDB average load per truck model per fleet"
+	humanDesc := humanLabel
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)	
+}
