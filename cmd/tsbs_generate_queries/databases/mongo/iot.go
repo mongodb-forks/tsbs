@@ -171,3 +171,63 @@ func (i *IoT) TrucksWithLowFuel(qi query.Query) {
 	q.CollectionName = []byte("point_data")
 	q.HumanDescription = []byte(humanDesc)
 }
+
+func (i *IoT) TrucksWithHighLoad(qi query.Query) {
+	fleet := i.GetRandomFleet()
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"$and": []bson.M{
+					bson.M{ "tags.fleet": fleet },
+					bson.M{ "tags.name": bson.M{ "$ne": nil } },
+					bson.M{ "measurement": "diagnostics" },
+				},
+			},
+		}},
+		/*
+				output: {
+					
+					
+					}
+				}
+			}
+		} },
+] )
+		*/
+		{{
+			"$group", bson.M{
+				"_id": "$tags.name",
+				"output": bson.M{
+					"$top": bson.M{
+						"sortBy": bson.M{ "time" : -1},
+						"output": bson.M{
+							"driver": "$tags.driver",
+							"time": "$time",
+							"fleet": "$tags.fleet",
+							"current_load": "$current_load",
+							"load_capacity": "$tags.load_capacity",
+							"current_load_ratio": bson.M{
+								"$divide": bson.A{"$current_load", "$tags.load_capacity"},
+							},
+						},
+					},
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"output.current_load_ratio": bson.M{
+					"$gte": 0.9,
+				},
+			},
+		}},
+	}
+	humanLabel := "MongoDB trucks with high load in a fleet"
+	humanDesc := fmt.Sprintf("%s: fleet: (%s)", humanLabel, fleet)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
+}
