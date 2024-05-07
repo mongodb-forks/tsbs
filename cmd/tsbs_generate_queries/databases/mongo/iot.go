@@ -343,6 +343,73 @@ func (i *IoT) TrucksWithLongDrivingSessions(qi query.Query) {
 	q.HumanDescription = []byte(humanDesc)
 }
 
+func (i *IoT) TrucksWithLongDailySessions(qi query.Query) {
+	fleet := i.GetRandomFleet()
+	interval := i.Interval.MustRandWindow(iot.DailyDrivingDuration)
+	start := interval.Start()
+	end := interval.End()
+	// Calculate number of 10 min intervals that is the max driving duration for the session if we rest 5 mins per hour.
+	numIntervals := tenMinutePeriods(35, iot.DailyDrivingDuration)
+
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "readings",
+				"tags.fleet": fleet,
+				"tags.name": bson.M{ "$ne": nil },
+				"time": bson.M{"$gte": start, "$lt": end },
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$tags.name",
+					"driver": "$tags.driver",
+					"fleet": "$tags.fleet",
+					"bucket": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$time",
+							"unit": "minute",
+							"binSize": 10,
+						},
+					},
+				},
+				"avg_velocity": bson.M{
+					"$avg": "$velocity",
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"avg_velocity": bson.M{"$gte": 1.0},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$_id.name",
+					"driver": "$_id.driver",
+				 },
+				"active_10_min_sessions": bson.M{"$count": bson.M{}},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"active_10_min_sessions": bson.M{"$gt": numIntervals},
+			},
+		}},
+	}
+
+	humanLabel := "MongoDB trucks with longer daily sessions"
+	humanDesc := fmt.Sprintf("%s: in fleet (%s) drove more than 10hours in the last 24 hours [%v, %v]", humanLabel, fleet, start, end)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
+}
+
 // tenMinutePeriods calculates the number of 10 minute periods that can fit in
 // the time duration if we subtract the minutes specified by minutesPerHour value.
 // E.g.: 4 hours - 5 minutes per hour = 3 hours and 40 minutes = 22 ten minute periods
