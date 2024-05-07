@@ -10,6 +10,8 @@ import (
 	"github.com/timescale/tsbs/pkg/query"
 )
 
+const goTimeFmt = "2006-01-02 15:04:05.999999 -0700"
+
 // BaseGenerator contains settings specific for Mongo database.
 type BaseGenerator struct {
 	UseNaive bool
