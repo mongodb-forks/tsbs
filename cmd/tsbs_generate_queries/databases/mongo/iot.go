@@ -83,3 +83,71 @@ func (i *IoT) LastLocByTruck(qi query.Query, nTrucks int) {
 	q.CollectionName = []byte("point_data")
 	q.HumanDescription = []byte(humanDesc)
 }
+
+// LastLocPerTruck finds all the truck locations along with truck and driver names.
+func (i *IoT) LastLocPerTruck(qi query.Query) {
+	fleet := i.GetRandomFleet()
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"$and": []bson.M{
+					bson.M{ "tags.fleet": fleet },
+					bson.M{ "tags.name": bson.M{ "$ne": nil } },
+					bson.M{ "measurement": "readings" },
+				},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": "$tags.name",
+				"output": bson.M{
+					"$top": bson.M{
+						"sortBy": bson.M{ "time" : -1},
+						"output": bson.M{
+							"longitude": "$longitude",
+							"latitude": "$latitude",
+							"time": "$time",
+							"driver": "$tags.driver",
+						},
+					},
+				},
+			},
+		}},
+	}
+	/*
+db.point_data.aggregate(
+    [
+			{ $match: {
+				$and: [
+					{ "tags.fleet": "South" },
+					{ "tags.name": { $ne: null } },
+					{ "measurement": "readings" }
+				]
+			} },
+			{ $group: {
+				_id: "$tags.name",
+				output: {
+					$top: {
+					sortBy: {time: -1},
+					output: {
+					longitude: "$longitude",
+					latitude: "$latitude",
+					time: "$time",
+					driver: "$tags.driver"
+				}
+        	}
+        }}
+    ])
+
+
+	*/
+
+	humanLabel := "MongoDB last location for each truck"
+	humanDesc := fmt.Sprintf("%s: fleet: (%s)", humanLabel, fleet)
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)
+}
