@@ -548,7 +548,7 @@ func (i *IoT) AvgLoad(qi query.Query) {
 				},
 				"avg_load": bson.M{ "$avg": "$current_load"},
 				"capacity": bson.M{ "$first": "$tags.load_capacity"},
-			}
+			},
 		}},
 		{{
 			"$addFields", bson.M{
@@ -556,9 +556,77 @@ func (i *IoT) AvgLoad(qi query.Query) {
 					"$divide": bson.A{"$avg_load", "$capacity"},
 				},
 			},
-		}}
+		}},
 	}
 	humanLabel := "MongoDB average load per truck model per fleet"
+	humanDesc := humanLabel
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)	
+}
+
+func (i *IoT) DailyTruckActivity(qi query.Query) {
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "diagnostics",
+				"tags.model": bson.M{"$ne": nil},
+				"tags.fleet": bson.M{"$ne": nil},
+				"tags.name": bson.M{"$ne": nil},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$tags.name",
+					"fleet": "$tags.fleet",
+					"model": "$tags.model",
+					"ten_min_bucket": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$time",
+							"unit": "minute",
+							"binSize": 10,
+						},
+					},
+				},
+				"mean_status": bson.M{ "$avg": "$status"},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"mean_status": bson.M{ "$lt": 1.0 },
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"fleet": "$_id.fleet",
+					"model": "$_id.model",
+                                         "day": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$_id.ten_min_bucket",
+							"unit": "day",
+							"binSize": 1,
+						},
+					},
+				},
+				"active_slots_per_day": bson.M{"$count": bson.M{}},
+			},
+		}},
+		{{
+			"$addFields", bson.M{
+				"daily_activity": bson.M{
+					// in total, there are 144 10 minute slots per day
+					"$divide": bson.A{"$active_slots_per_day", 144 },
+				},
+			},
+		}},
+	}
+
+	humanLabel := "MongoDB daily truck activity per fleet per model"
 	humanDesc := humanLabel
 
 	q := qi.(*query.Mongo)
