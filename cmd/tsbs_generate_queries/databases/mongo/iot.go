@@ -635,3 +635,53 @@ func (i *IoT) DailyTruckActivity(qi query.Query) {
 	q.CollectionName = []byte("point_data")
 	q.HumanDescription = []byte(humanDesc)	
 }
+
+// TruckBreakdownFrequency calculates the amount of times a truck model broke down in the last period.
+func (i *IoT) TruckBreakdownFrequency(qi query.Query) {
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "diagnostics",
+				"tags.name": bson.M{"$ne": nil},
+				"tags.model": bson.M{"$ne": nil},
+			},
+		}},
+		{{
+			"$setWindowFields": bson.M{
+				"partitionBy": "$tags.name",
+				"sortBy": bson.M{ "time": 1 },
+				"output": bson.M{
+					"summed": bson.M{
+						"$sum": "$status",
+						"window": bson.M{
+							"documents": bson.A{-1, "current"},
+						},
+					},
+				},
+			},
+		}},
+		{{
+			"$match": bson.M{
+				"status": bson.M{ "$ne": 0 },
+				"$expr": bson.M{
+					"$eq": bson.A{ "$status", "$summed" }
+				},
+			},
+		}},
+		{{
+			"$group": bson.M{
+				"_id": "$tags.model",
+				"breakdowns": bson.M{"$count": bson.M{}},
+			}				
+		}},
+	}
+
+	humanLabel := "MongoDB truck breakdown frequency per model"
+	humanDesc := humanLabel
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)	
+}
