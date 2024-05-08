@@ -525,10 +525,140 @@ func (i *IoT) AvgDailyDrivingDuration(qi query.Query) {
 }
 
 // AvgDailyDrivingSession finds the average driving session without stopping per driver per day.
-/* FIXME
 func (i *IoT) AvgDailyDrivingSession(qi query.Query) {
+	pipelineQuery := mongo.Pipeline{
+		{{
+			"$match", bson.M{
+				"measurement": "readings",
+				"tags.name": bson.M{"$ne": nil },
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$tags.name",
+					"fleet": "$tags.fleet",
+					"bucket": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$time",
+							"unit": "minute",
+							"binSize": 10,
+						},
+					},
+				},
+				"avg_velocity": bson.M{ "$avg" : "$velocity" },
+			},
+		}},
+		{{
+			"$addFields", bson.M{
+				"isDriving": bson.M{
+					"$cond": bson.A{
+						bson.M{"$gte": bson.A{"$avg_velocity", 1.0}},
+						1.0,
+						0.0,
+					},
+				},
+			},
+		}},
+		{{
+			"$setWindowFields", bson.M{
+				"partitionBy": "$_id.name",
+				"sortBy": bson.M{"_id.bucket": 1},
+				"output": bson.M{
+					"summedBack": bson.M{
+						"$sum": "$isDriving",
+						"window": bson.M{
+							"documents": bson.A{-1, "current"},
+						},
+					},
+					"summedFront": bson.M{
+						"$sum": "$isDriving",
+						"window": bson.M{
+							"documents": bson.A{"current", 1},
+						},
+					},
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"isDriving" : 1,
+				"$or": []bson.M{
+					bson.M{"summedBack": bson.M{"$eq": 1}},
+					bson.M{"summedFront" : bson.M{"$eq": 1}},
+				},
+			},
+		}},
+		{{
+			"$setWindowFields", bson.M{
+				"partitionBy": "$_id.name",
+				"sortBy": bson.M{"_id.bucket": 1},
+				"output": bson.M{
+					"times": bson.M{
+						"$push": "$_id.bucket",
+						"window": bson.M{
+							"documents": bson.A{-1, "current"},
+						},
+					},
+				},
+			},
+		}},
+		{{
+			"$match", bson.M{
+				"summedFront": 1,
+			},
+		}},
+		{{
+			"$addFields", bson.M{
+				"interval": bson.M{
+					"$cond": bson.A{
+						bson.M{"$eq": bson.A{"$summedBack", 1} },
+						10,
+						bson.M{"$add": bson.A{
+							bson.M{
+								"$dateDiff": bson.M{
+									"startDate": bson.M{
+										"$arrayElemAt": bson.A{ "$times", 0 },
+									},
+									"endDate": bson.M{
+										"$arrayElemAt": bson.A{ "$times", 1 },
+									},
+									"unit": "minute",
+								},
+							},
+							10,
+						}},
+					},
+				},
+			},
+		}},
+		{{
+			"$group", bson.M{
+				"_id": bson.M{
+					"name": "$_id.name",
+					"day": bson.M{
+						"$dateTrunc": bson.M{
+							"date": "$_id.bucket", 
+							"unit": "hour",
+							"binSize": 1,
+						 },
+					},
+				},
+				"avgSession": bson.M{
+					"$avg": "$interval",
+				},
+			},
+		}},
+	}
+	humanLabel := "MongoDB average driver driving session without stopping per day"
+	humanDesc := humanLabel
+
+	q := qi.(*query.Mongo)
+	q.HumanLabel = []byte(humanLabel)
+	q.Pipeline = pipelineQuery
+	q.CollectionName = []byte("point_data")
+	q.HumanDescription = []byte(humanDesc)	
 }
-*/
 
 // AvgLoad finds the average load per truck model per fleet.
 func (i *IoT) AvgLoad(qi query.Query) {
@@ -647,7 +777,7 @@ func (i *IoT) TruckBreakdownFrequency(qi query.Query) {
 			},
 		}},
 		{{
-			"$setWindowFields": bson.M{
+			"$setWindowFields", bson.M{
 				"partitionBy": "$tags.name",
 				"sortBy": bson.M{ "time": 1 },
 				"output": bson.M{
@@ -661,18 +791,18 @@ func (i *IoT) TruckBreakdownFrequency(qi query.Query) {
 			},
 		}},
 		{{
-			"$match": bson.M{
+			"$match", bson.M{
 				"status": bson.M{ "$ne": 0 },
 				"$expr": bson.M{
-					"$eq": bson.A{ "$status", "$summed" }
+					"$eq": bson.A{ "$status", "$summed" },
 				},
 			},
 		}},
 		{{
-			"$group": bson.M{
+			"$group", bson.M{
 				"_id": "$tags.model",
 				"breakdowns": bson.M{"$count": bson.M{}},
-			}				
+			},
 		}},
 	}
 
