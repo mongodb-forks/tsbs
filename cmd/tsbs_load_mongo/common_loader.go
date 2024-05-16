@@ -13,11 +13,44 @@ import (
 	"github.com/timescale/tsbs/pkg/data/usecases/common"
 	"github.com/timescale/tsbs/pkg/targets"
 	"github.com/timescale/tsbs/pkg/targets/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type fileDataSource struct {
 	lenBuf []byte
 	r      *bufio.Reader
+}
+func parseTag(x map[string]interface{}, t *mongo.MongoTag) (bool) {
+	unionTable := new(flatbuffers.Table)
+	if(!t.Value(unionTable)) { return false }
+	if(t.ValueType() == mongo.MongoTagValueMongoStringTag) {
+		stringTag := new(mongo.MongoStringTag)
+		stringTag.Init(unionTable.Bytes, unionTable.Pos)
+		x[string(t.Key())] = string(stringTag.Value())
+	} else if(t.ValueType() == mongo.MongoTagValueMongoFloat32Tag) {
+		floatTag := new(mongo.MongoFloat32Tag)
+		floatTag.Init(unionTable.Bytes, unionTable.Pos)
+		x[string(t.Key())] = float32(floatTag.Value())
+	} else {
+		return false
+	}
+	return true
+}
+
+func parseTagAsBson(t *mongo.MongoTag) (bson.E, bool) {
+	unionTable := new(flatbuffers.Table)
+	if(!t.Value(unionTable)) { return bson.E{}, false }
+	if(t.ValueType() == mongo.MongoTagValueMongoStringTag) {
+		stringTag := new(mongo.MongoStringTag)
+		stringTag.Init(unionTable.Bytes, unionTable.Pos)
+		return bson.E{string(t.Key()), string(stringTag.Value())}, true
+	} else if(t.ValueType() == mongo.MongoTagValueMongoFloat32Tag) {
+		floatTag := new(mongo.MongoFloat32Tag)
+		floatTag.Init(unionTable.Bytes, unionTable.Pos)
+		return bson.E{string(t.Key()), float32(floatTag.Value())}, true
+	} else {
+		return bson.E{}, false
+	}
 }
 
 func (d *fileDataSource) NextItem() data.LoadedPoint {
