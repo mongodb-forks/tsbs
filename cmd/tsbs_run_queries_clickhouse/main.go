@@ -20,11 +20,13 @@ import (
 
 // Program option vars:
 var (
-	chConnect string
-	hostsList []string
-	user      string
-	password  string
-
+	chConnect   string
+	hostsList   []string
+	user        string
+	password    string
+	port        int
+	secure      bool
+	skipVerify  bool
 	showExplain bool
 )
 
@@ -45,7 +47,9 @@ func init() {
 		"Comma separated list of ClickHouse hosts (pass multiple values for sharding reads on a multi-node setup)")
 	pflag.String("user", "default", "User to connect to ClickHouse as")
 	pflag.String("password", "", "Password to connect to ClickHouse")
-
+	pflag.Int("port", 9000, "Port of ClickHouse instance")
+	pflag.Bool("secure", false, "establish secure connection (default false)")
+	pflag.Bool("skip-verify", false, "skip certificate verification (default false)")
 	pflag.Parse()
 
 	err := utils.SetupConfigFile()
@@ -62,6 +66,9 @@ func init() {
 	hosts = viper.GetString("hosts")
 	user = viper.GetString("user")
 	password = viper.GetString("password")
+	port = viper.GetInt("port")
+	secure = viper.GetBool("secure")
+	skipVerify = viper.GetBool("skip-verify")
 
 	// Parse comma separated string of hosts and put in a slice (for multi-node setups)
 	for _, host := range strings.Split(hosts, ",") {
@@ -84,7 +91,7 @@ func getConnectString(workerNumber int) string {
 	// Round robin the host/worker assignment by assigning a host based on workerNumber % totalNumberOfHosts
 	host := hostsList[workerNumber%len(hostsList)]
 
-	return fmt.Sprintf("tcp://%s:9000?username=%s&password=%s&database=%s", host, user, password, runner.DatabaseName())
+	return fmt.Sprintf("tcp://%s:%d?username=%s&password=%s&database=%s&secure=%t&skip_verify=%t", host, port, user, password, runner.DatabaseName(), secure, skipVerify)
 }
 
 // prettyPrintResponse prints a Query and its response in JSON format with two
