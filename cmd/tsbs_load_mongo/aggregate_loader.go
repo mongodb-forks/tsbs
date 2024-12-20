@@ -29,10 +29,13 @@ func (i *hostnameIndexer) GetIndex(item data.LoadedPoint) uint {
 		p.Tags(t, j)
 		key := string(t.Key())
 		if key == "hostname" || key == "name" {
+			myMap := map[string]interface{}{}
+			success := parseTag(myMap, t)
+			if( !success ) { continue }
 			// the hostame is the defacto index for devops tags
 			// the truck name is the defacto index for iot tags
 			h := fnv.New32a()
-			h.Write([]byte(string(t.Value())))
+			h.Write([]byte(myMap[key].(string)))
 			return uint(h.Sum32()) % i.partitions
 		}
 	}
@@ -128,12 +131,15 @@ func (p *aggProcessor) ProcessBatch(b targets.Batch, doLoad bool) (uint64, uint6
 	eventCnt := uint64(0)
 	for _, event := range batch.arr {
 		tagsSlice := bson.D{}
-		tagsMap := map[string]string{}
+		tagsMap := map[string]interface{}{}
 		t := &tsbsMongo.MongoTag{}
 		for j := 0; j < event.TagsLength(); j++ {
 			event.Tags(t, j)
-			tagsMap[string(t.Key())] = string(t.Value())
-			tagsSlice = append(tagsSlice, bson.E{string(t.Key()), string(t.Value())})
+			parseTag(tagsMap, t)
+			bbson, success := parseTagAsBson(t)
+			if(success == true) { 
+				tagsSlice = append(tagsSlice, bbson) 
+			}
 		}
 
 		// Determine which document this event belongs too
