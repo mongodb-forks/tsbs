@@ -35,6 +35,7 @@ var (
 	retryableWrites      bool
 	orderedInserts       bool
 	randomFieldOrder     bool
+	batchMetaFields		 bool
 	collectionSharded    bool
 	numInitChunks        uint
 	shardKeySpec         string
@@ -91,8 +92,8 @@ func init() {
 	}
 
 	if batchMetaFields {
-		config.batchMetaFields = true
-		config.metaFieldIndex = metaFieldIndex
+		config.BatchMetaFields = true
+		config.MetaFieldIndex = metaFieldIndex
 	}
 
 	if !documentPer && timeseriesCollection {
