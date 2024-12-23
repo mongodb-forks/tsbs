@@ -22,6 +22,7 @@ loader:
     collection-sharded: true
     retryable-writes: false
     random-field-order: false
+    batch-meta-fields: false
   runner:
     # the simulated data will be sent in batches of 'batch-size' points
     # to each worker

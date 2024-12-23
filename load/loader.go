@@ -64,6 +64,9 @@ func (c BenchmarkRunnerConfig) AddToFlagSet(fs *pflag.FlagSet) {
 	fs.String("insert-intervals", "", "Time to wait between each insert, default '' => all workers insert ASAP. '1,2' = worker 1 waits 1s between inserts, worker 2 and others wait 2s")
 	fs.Bool("hash-workers", false, "Whether to consistently hash insert data to the same workers (i.e., the data for a particular host always goes to the same worker)")
 	fs.String("results-file", "", "Write the test results summary json to this file")
+	// TODO: These are only for mongo-specific; need to check how to properly declare.
+	fs.Bool("batch-meta-fields", false, "Whether to use ensure batches of data have the same meta field") )
+	fs.String("meta-field-index", "", "Field name within metaField to index on")
 }
 
 type BenchmarkRunner interface {
@@ -199,7 +202,12 @@ func (l *CommonBenchmarkRunner) RunBenchmark(b targets.Benchmark) {
 	}
 
 	// Start scan process - actual data read process
-	scanWithFlowControl(channels, l.BatchSize, l.Limit, b.GetDataSource(), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))))
+	if l.batchMetaFields {
+		scanWithBatchingMetaFields(channels, l.BatchSize, l.Limit, b.GetDataSource(), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))), l.metaFieldIndex)
+	} else {
+		scanWithFlowControl(channels, l.BatchSize, l.Limit, b.GetDataSource(), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))))
+	}
+
 	// After scan process completed (no more data to come) - begin shutdown process
 
 	// Close all communication channels to/from workers

@@ -37,6 +37,93 @@ func sendOrQueueBatch(ch *duplexChannel, count *int, batch targets.Batch, unsent
 	return unsent
 }
 
+// scanWithBatchingMetaFields reads data from the DataSource ds until a limit is reached
+// (if -1, all items are read).
+// Data is then placed into a map with the key being the meta field's value and the value
+// being the Data with the corresponding meta field. 
+// Data with the same meta field values are then dispatched to workers (duplexChannel
+// chosen by PointIndexer). 
+func scanWithBatchingMetaFields(  
+	channels []*duplexChannel, batchSize uint, limit uint64,  
+	ds targets.DataSource, factory targets.BatchFactory, indexer targets.PointIndexer,  
+	metaFieldIndex string) uint64 {  
+  
+	var itemsRead uint64  
+	numChannels := len(channels)  
+  
+	if batchSize < 1 {  
+		panic("--batch-size cannot be less than 1")  
+	}  
+  
+	// TODO: Figure out if you need to still have unsentBatches because we aren't
+	// implementing with flow control anymore.
+	// Current batches (per channel) that are being filled with items from scanner
+	fillingBatches := make([]targets.Batch, numChannels)
+	for i := range fillingBatches {
+		fillingBatches[i] = factory.New()
+	}
+
+	// Batches that are ready to be set when space on a channel opens
+	unsentBatches := make([][]targets.Batch, numChannels)
+	for i := range unsentBatches {
+		unsentBatches[i] = []targets.Batch{}
+	}
+  
+	// Map for storing points based on meta field value  
+	pointsBatchedOnMetaField := make(map[string][]interface{})  
+  
+	// Process input data and populate pointsBatchedOnMetaField  
+	for {  
+		// Stop if we've reached the limit.  
+		if limit > 0 && itemsRead == limit {  
+			break  
+		}  
+  
+		item := ds.NextItem()  
+		if item.Data == nil {  
+			break // No more items to process  
+		}  
+		itemsRead++  
+  
+		// Group data points based on the meta field value  
+		for _, event := range item.Data {  
+			tagsMap := map[string]string{}  
+			t := &tsbsMongo.MongoTag{}  
+			for j := 0; j < event.TagsLength(); j++ {  
+				event.Tags(t, j)  
+				tagsMap[string(t.Key())] = string(t.Value())  
+			}  
+  
+			metaIndexValue := tagsMap[metaFieldIndex]  
+			pointsBatchedOnMetaField[metaIndexValue] = append(pointsBatchedOnMetaField[metaIndexValue], event)  
+		}  
+	}  
+  	// We aren't implementing flow control here so ocnt gets largely ignored.
+	ocnt := 0
+
+	// Place points in batches according to their meta field values  
+	for metaValue, points := range pointsBatchedOnMetaField {  
+		// TODO: Understand this logic better of how its getting the indexer value 
+		idx := indexer.GetIndex(metaValue) 
+		for _, point := range points {  
+			fillingBatches[idx].Append(point)  
+			if fillingBatches[idx].Len() >= batchSize {  
+				unsentBatches[idx] = sendOrQueueBatch(channels[idx], &ocnt, fillingBatches[idx], unsentBatches[idx])
+				fillingBatches[idx] = factory.New()  
+			}  
+		}  
+	}  
+  
+	// Send remaining batches that are not full but contain items  
+	for idx, b := range fillingBatches {  
+		if b.Len() > 0 {  
+			unsentBatches[idx] = sendOrQueueBatch(channels[idx], &ocnt, fillingBatches[idx], unsentBatches[idx])
+		}  
+	}  
+  
+	return itemsRead  
+}  
+
 // scanWithFlowControl reads data from the DataSource ds until a limit is reached (if -1, all items are read).
 // Data is then placed into appropriate batches, using the supplied PointIndexer,
 // which are then dispatched to workers (duplexChannel chosen by PointIndexer).

@@ -26,6 +26,7 @@ func (t *mongoTarget) TargetSpecificFlags(flagPrefix string, flagSet *pflag.Flag
 	flagSet.Bool(flagPrefix+"retryable-writes", true, "Whether to use retryable writes")
 	flagSet.Bool(flagPrefix+"ordered-inserts", true, "Whether to use ordered inserts")
 	flagSet.Bool(flagPrefix+"random-field-order", true, "Whether to use random field order")
+	flagSet.Bool(flagPrefix+"batch-meta-fields", false, "Whether to use ensure batches of data have the same meta field")
 	flagSet.Bool(flagPrefix+"collection-sharded", false, "Whether to shard the collection")
 	flagSet.Uint(flagPrefix+"number-initial-chunks", 0, "number of initial chunks to create and distribute for an empty collection;" +
 														"if 0 then do not specifiy any initial chunks and let the system default to 2 per shard")
