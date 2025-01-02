@@ -85,11 +85,7 @@ func init() {
 	metaFieldIndex = viper.GetString("meta-field-index")
 	granularity = viper.GetString("granularity")
 	
-	if documentPer {
-		config.HashWorkers = false
-	} else {
-		config.HashWorkers = true
-	}
+	config.HashWorkers = true
 
 	if batchMetaFields {
 		config.BatchMetaFields = true
