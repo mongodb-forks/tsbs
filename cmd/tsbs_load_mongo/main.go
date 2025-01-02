@@ -35,6 +35,7 @@ var (
 	retryableWrites      bool
 	orderedInserts       bool
 	randomFieldOrder     bool
+	batchMetaFields		 bool
 	collectionSharded    bool
 	numInitChunks        uint
 	shardKeySpec         string
@@ -76,6 +77,7 @@ func init() {
 	retryableWrites = viper.GetBool("retryable-writes")
 	orderedInserts = viper.GetBool("ordered-inserts")
 	randomFieldOrder = viper.GetBool("random-field-order")
+	batchMetaFields = viper.GetBool("batch-meta-fields")
 	collectionSharded = viper.GetBool("collection-sharded")
 	numInitChunks = viper.GetUint("number-initial-chunks")
 	shardKeySpec = viper.GetString("shard-key-spec")
@@ -89,9 +91,18 @@ func init() {
 		config.HashWorkers = true
 	}
 
+	if batchMetaFields {
+		config.BatchMetaFields = true
+		config.MetaFieldIndex = metaFieldIndex
+	}
+
 	if !documentPer && timeseriesCollection {
 		log.Fatal("Must set document-per-event=true in order to use timeseries-collection=true")
 	}
+
+	if !timeseriesCollection && batchMetaFields {
+		log.Fatal("Must set document-per-event=true and timeseries-collection=true in order to use batch-meta-fields=true")
+	} 
 
 	if collectionSharded && len(shardKeySpec) == 0 {
 		log.Fatal("Must specify a shard key spec in order to use a sharded collection")

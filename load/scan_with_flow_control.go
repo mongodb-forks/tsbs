@@ -2,9 +2,17 @@ package load
 
 import (
 	"reflect"
+	"hash/fnv"
 
 	"github.com/timescale/tsbs/pkg/targets"
+	tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
+
+func hash(s string) uint {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return uint(h.Sum32())
+}
 
 // ackAndMaybeSend adjust the unsent batches count
 // and sends one batch (if any available) to the worker via ch.
@@ -44,7 +52,7 @@ func sendOrQueueBatch(ch *duplexChannel, count *int, batch targets.Batch, unsent
 // and also that the scanning process does not starve them of CPU.
 func scanWithFlowControl(
 	channels []*duplexChannel, batchSize uint, limit uint64,
-	ds targets.DataSource, factory targets.BatchFactory, indexer targets.PointIndexer,
+	ds targets.DataSource, factory targets.BatchFactory, indexer targets.PointIndexer, batchedInserts bool, metaFieldIndex string,
 ) uint64 {
 	var itemsRead uint64
 	numChannels := len(channels)
@@ -123,6 +131,23 @@ func scanWithFlowControl(
 
 		// Append new item to batch
 		idx := indexer.GetIndex(item)
+		metaIndexVal := ""
+		metaIndexValExists := false
+		if batchedInserts { 
+			t := &tsbsMongo.MongoTag{}
+			p := item.Data.(*tsbsMongo.MongoPoint)
+			for j := 0; j < p.TagsLength(); j++ {  
+				p.Tags(t, j)  
+				if string(t.Key()) == metaFieldIndex {
+					metaIndexVal = string(t.Value())
+					metaIndexValExists = true
+				}
+			}
+			// Only assign the channel based on the metaIndexVal if we find a metaIndexVal
+			if metaIndexValExists {
+				idx = hashMeow(metaIndexVal) % uint(numChannels) 
+			} 
+		}
 		fillingBatches[idx].Append(item)
 
 		if fillingBatches[idx].Len() >= batchSize {

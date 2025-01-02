@@ -1,8 +1,17 @@
 package load
 
 import (
-	"github.com/timescale/tsbs/pkg/targets"
+		"hash/fnv"
+
+		"github.com/timescale/tsbs/pkg/targets"
+		tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
+
+func hashMeow(s string) uint {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return uint(h.Sum32())
+}
 
 // scanWithoutFlowControl reads data from the DataSource ds until a limit is reached (if -1, all items are read).
 // Data is then placed into appropriate batches, using the supplied PointIndexer,
@@ -12,8 +21,7 @@ import (
 // in that case just set hash-workers to false and use 1 channel for all workers.
 func scanWithoutFlowControl(
 	ds targets.DataSource, indexer targets.PointIndexer, factory targets.BatchFactory, channels []chan targets.Batch,
-	batchSize uint, limit uint64,
-) uint64 {
+	batchSize uint, limit uint64, batchedInserts bool, metaFieldIndex string) uint64 {
 	if batchSize == 0 {
 		panic("batch size can't be 0")
 	}
@@ -36,6 +44,24 @@ func scanWithoutFlowControl(
 		itemsRead++
 
 		idx := indexer.GetIndex(item)
+		metaIndexVal := ""
+		metaIndexValExists := false
+		if batchedInserts { 
+			t := &tsbsMongo.MongoTag{}
+			p := item.Data.(*tsbsMongo.MongoPoint)
+			for j := 0; j < p.TagsLength(); j++ {  
+				p.Tags(t, j)  
+				if string(t.Key()) == metaFieldIndex {
+					metaIndexVal = string(t.Value())
+					metaIndexValExists = true
+				}
+			}
+			// Only assign the channel based on the metaIndexVal if we find a metaIndexVal
+			if metaIndexValExists {
+				idx = hashMeow(metaIndexVal) % uint(numChannels) 
+			} 
+		}
+
 		batches[idx].Append(item)
 
 		if batches[idx].Len() >= batchSize {
