@@ -66,8 +66,8 @@ func (c BenchmarkRunnerConfig) AddToFlagSet(fs *pflag.FlagSet) {
 	fs.String("insert-intervals", "", "Time to wait between each insert, default '' => all workers insert ASAP. '1,2' = worker 1 waits 1s between inserts, worker 2 and others wait 2s")
 	fs.Bool("hash-workers", false, "Whether to consistently hash insert data to the same workers (i.e., the data for a particular host always goes to the same worker)")
 	fs.String("results-file", "", "Write the test results summary json to this file")
-	fs.Bool("batch-meta-fields", false, "Whether to use ensure batches of data have the same meta field")
-	fs.String("meta-field-index", "", "Field name within metaField to index on")
+	fs.Bool("batch-meta-fields", true, "Whether to use ensure batches of data have the same meta field")
+	fs.String("meta-field-index", "tags", "Field name within metaField to index on")
 }
 
 type BenchmarkRunner interface {

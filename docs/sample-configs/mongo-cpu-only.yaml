@@ -19,7 +19,7 @@ loader:
   db-specific:
     document-per-event: true
     timeseries-collection: true
-    batch-meta-fields: false
+    batch-meta-fields: true 
     collection-sharded: true
     retryable-writes: false
     random-field-order: false
