@@ -7,12 +7,6 @@ import (
 		tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
 
-func hashMeow(s string) uint {
-	h := fnv.New32a()
-	h.Write([]byte(s))
-	return uint(h.Sum32())
-}
-
 // scanWithoutFlowControl reads data from the DataSource ds until a limit is reached (if -1, all items are read).
 // Data is then placed into appropriate batches, using the supplied PointIndexer,
 // which are then dispatched to workers (channel idx chosen by PointIndexer).
@@ -58,7 +52,7 @@ func scanWithoutFlowControl(
 			}
 			// Only assign the channel based on the metaIndexVal if we find a metaIndexVal
 			if metaIndexValExists {
-				idx = hashMeow(metaIndexVal) % uint(numChannels) 
+				idx = hash(metaIndexVal) % uint(numChannels) 
 			} 
 		}
 

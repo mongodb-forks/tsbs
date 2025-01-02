@@ -145,7 +145,7 @@ func scanWithFlowControl(
 			}
 			// Only assign the channel based on the metaIndexVal if we find a metaIndexVal
 			if metaIndexValExists {
-				idx = hashMeow(metaIndexVal) % uint(numChannels) 
+				idx = hash(metaIndexVal) % uint(numChannels) 
 			} 
 		}
 		fillingBatches[idx].Append(item)
