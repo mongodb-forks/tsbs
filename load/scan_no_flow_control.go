@@ -1,8 +1,6 @@
 package load
 
 import (
-		"hash/fnv"
-
 		"github.com/timescale/tsbs/pkg/targets"
 		tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
