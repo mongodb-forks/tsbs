@@ -1,6 +1,7 @@
 package load
 
 import (
+		"fmt"
 		"github.com/timescale/tsbs/pkg/targets"
 		tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
@@ -38,7 +39,9 @@ func scanWithoutFlowControl(
 		idx := indexer.GetIndex(item)
 		metaIndexVal := ""
 		metaIndexValExists := false
+		fmt.Println("metaFieldIndex: ", metaFieldIndex);
 		if batchedInserts { 
+			fmt.Println("Enters batched inserts")
 			t := &tsbsMongo.MongoTag{}
 			p := item.Data.(*tsbsMongo.MongoPoint)
 			for j := 0; j < p.TagsLength(); j++ {  
@@ -51,6 +54,7 @@ func scanWithoutFlowControl(
 			// Only assign the channel based on the metaIndexVal if we find a metaIndexVal
 			if metaIndexValExists {
 				idx = hash(metaIndexVal) % uint(numChannels) 
+				fmt.Println("metaIndexVal: ", metaIndexVal, ", hash(metaIndexVal): ", hash(metaIndexVal))
 			} 
 		}
 
