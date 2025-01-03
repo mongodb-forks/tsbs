@@ -49,12 +49,14 @@ func (d *CPUOnlySimulator) Next(p *data.Point) bool {
 	} else {
 		if d.hostIndex == uint64(len(d.hosts)) {
 			d.hostIndex = 0
-
+	
 			for i := 0; i < len(d.hosts); i++ {
 				d.hosts[i].TickAll(d.interval)
 			}
+	
 			d.adjustNumHostsForEpoch()
 		}
+	
 	}
 	return d.populatePoint(p, 0)
 }
