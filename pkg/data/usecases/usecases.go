@@ -52,6 +52,7 @@ func GetSimulatorConfig(dgc *common.DataGeneratorConfig) (common.SimulatorConfig
 			InitHostCount:   dgc.InitialScale,
 			HostCount:       dgc.Scale,
 			HostConstructor: devops.NewHostCPUOnly,
+			BatchHostPoints: dgc.BatchHostPoints,
 		}
 	case common.UseCaseCPUSingle:
 		ret = &devops.CPUOnlySimulatorConfig{
@@ -61,6 +62,7 @@ func GetSimulatorConfig(dgc *common.DataGeneratorConfig) (common.SimulatorConfig
 			InitHostCount:   dgc.InitialScale,
 			HostCount:       dgc.Scale,
 			HostConstructor: devops.NewHostCPUSingle,
+			BatchHostPoints: dgc.BatchHostPoints,
 		}
 	case common.UseCaseDevopsGeneric:
 		if dgc.InitialScale == dgc.Scale {

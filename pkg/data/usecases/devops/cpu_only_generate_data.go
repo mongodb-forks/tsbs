@@ -1,6 +1,8 @@
 package devops
 
 import (
+	"fmt"
+
 	"github.com/timescale/tsbs/pkg/data"
 	"github.com/timescale/tsbs/pkg/data/usecases/common"
 	"time"
@@ -27,17 +29,33 @@ func (d *CPUOnlySimulator) Headers() *common.GeneratedDataHeaders {
 
 // Next advances a Point to the next state in the generator.
 func (d *CPUOnlySimulator) Next(p *data.Point) bool {
+	fmt.Println("batchHostPoints: ", d.batchHostPoints)
 	// Switch to the next metric if needed
-	if d.hostIndex == uint64(len(d.hosts)) {
-		d.hostIndex = 0
-
-		for i := 0; i < len(d.hosts); i++ {
-			d.hosts[i].TickAll(d.interval)
+	if (d.batchHostPoints) {
+		// Max points is across all the hosts.
+		// TODO: account for the extra points that might be not included when we round down
+		if d.madePoints == uint64(d.maxPoints/uint64(len(d.hosts))) {
+			d.hostIndex++
+			d.madePoints = 0
+			// TODO: figure out if this is the appropriate place to adjust num hosts for epoch...
+			d.adjustNumHostsForEpoch()
 		}
+		// We have generated all of our points and we want to signal we are finished 
+		if d.hostIndex == uint64(len(d.hosts)) {
+			return false 
+		} 
+		// We only tick the points for the current host index.
+		d.hosts[d.hostIndex].TickAll(d.interval)
+	} else {
+		if d.hostIndex == uint64(len(d.hosts)) {
+			d.hostIndex = 0
 
-		d.adjustNumHostsForEpoch()
+			for i := 0; i < len(d.hosts); i++ {
+				d.hosts[i].TickAll(d.interval)
+			}
+			d.adjustNumHostsForEpoch()
+		}
 	}
-
 	return d.populatePoint(p, 0)
 }
 
@@ -71,6 +89,7 @@ func (c *CPUOnlySimulatorConfig) NewSimulator(interval time.Duration, limit uint
 		timestampStart: c.Start,
 		timestampEnd:   c.End,
 		interval:       interval,
+		batchHostPoints: c.BatchHostPoints,
 	}}
 
 	return sim

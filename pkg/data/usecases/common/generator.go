@@ -37,6 +37,7 @@ type DataGeneratorConfig struct {
 	Limit                 uint64        `yaml:"max-data-points" mapstructure:"max-data-points"`
 	InitialScale          uint64        `yaml:"initial-scale" mapstructure:"initial-scale" `
 	LogInterval           time.Duration `yaml:"log-interval" mapstructure:"log-interval"`
+	BatchHostPoints	  	  bool 			`yaml:"batch-host-points" mapstructure:"batch-host-points"`
 	InterleavedGroupID    uint          `yaml:"interleaved-generation-group-id" mapstructure:"interleaved-generation-group-id"`
 	InterleavedNumGroups  uint          `yaml:"interleaved-generation-groups" mapstructure:"interleaved-generation-groups"`
 	MaxMetricCountPerHost uint64        `yaml:"max-metric-count" mapstructure:"max-metric-count"`
@@ -77,6 +78,7 @@ func (c *DataGeneratorConfig) AddToFlagSet(fs *pflag.FlagSet) {
 	fs.Uint("interleaved-generation-groups", 1,
 		"The number of round-robin serialization groups. Use this to scale up data generation to multiple processes.")
 	fs.Uint64("max-metric-count", 100, "Max number of metric fields to generate per host. Used only in devops-generic use-case")
+	fs.Bool("batch-host-points", false, "Generates the data by batching the data from each host")
 }
 
 const defaultTimeStart = "2016-01-01T00:00:00Z"

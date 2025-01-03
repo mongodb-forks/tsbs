@@ -28,6 +28,8 @@ type commonDevopsSimulatorConfig struct {
 	HostConstructor func(ctx *HostContext) Host
 	// MaxMetricCount is the max number of metrics per host to create when using generic-devops use-case
 	MaxMetricCount uint64
+	// BatchHostPoints ensures that we generate by batching host points 
+	BatchHostPoints bool
 }
 
 func NewHostCtx(id int, start time.Time) *HostContext {
@@ -57,11 +59,13 @@ type commonDevopsSimulator struct {
 	timestampStart time.Time
 	timestampEnd   time.Time
 	interval       time.Duration
+
+	batchHostPoints bool
 }
 
 // Finished tells whether we have simulated all the necessary points
 func (s *commonDevopsSimulator) Finished() bool {
-	return s.madePoints >= s.maxPoints
+	return (s.batchHostPoints && s.hostIndex == uint64(len(s.hosts))) || (s.madePoints >= s.maxPoints)
 }
 
 func (s *commonDevopsSimulator) Fields() map[string][]string {
@@ -130,7 +134,11 @@ func (s *commonDevopsSimulator) populatePoint(p *data.Point, measureIdx int) boo
 
 	ret := s.hostIndex < s.epochHosts
 	s.madePoints++
-	s.hostIndex++
+	// We only want to increment the hostIndex in the case that we are not batching host points.
+	// We handle incrementing the hostIndex in Next() when we are batching host points.
+	if (!s.batchHostPoints) {
+		s.hostIndex++
+	}
 	return ret
 }
 

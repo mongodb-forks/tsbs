@@ -109,6 +109,11 @@ func (g *DataGenerator) runSimulator(sim common.Simulator, serializer serialize.
 	for !sim.Finished() {
 		write := sim.Next(point)
 		if !write {
+			// When we batch host points, we need to check if we are finished
+			// each time we call sim.Next() or we can go out-of-bounds
+			if dgc.BatchHostPoints && sim.Finished() {
+				break
+			}
 			point.Reset()
 			continue
 		}
