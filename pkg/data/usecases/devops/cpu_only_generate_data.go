@@ -1,8 +1,6 @@
 package devops
 
 import (
-	"fmt"
-
 	"github.com/timescale/tsbs/pkg/data"
 	"github.com/timescale/tsbs/pkg/data/usecases/common"
 	"time"
@@ -29,7 +27,6 @@ func (d *CPUOnlySimulator) Headers() *common.GeneratedDataHeaders {
 
 // Next advances a Point to the next state in the generator.
 func (d *CPUOnlySimulator) Next(p *data.Point) bool {
-	fmt.Println("batchHostPoints: ", d.batchHostPoints)
 	// Switch to the next metric if needed
 	if (d.batchHostPoints) {
 		// Max points is across all the hosts.
