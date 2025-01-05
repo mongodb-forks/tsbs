@@ -32,7 +32,7 @@ func (t *mongoTarget) TargetSpecificFlags(flagPrefix string, flagSet *pflag.Flag
 														"if 0 then do not specifiy any initial chunks and let the system default to 2 per shard")
 	flagSet.String(flagPrefix+"shard-key-spec", "{time:1}", "shard key spec")
 	flagSet.Bool(flagPrefix+"balancer-on", true, "whether to keep shard re-balancer on")
-	flagSet.String(flagPrefix+"meta-field-index", "tags", "Field name within metaField to index on")
+	flagSet.String(flagPrefix+"meta-field-index", "hostname", "Field name within metaField to index on")
 	flagSet.String(flagPrefix+"granularity", "seconds", "Granularity for time-series collection")
 }
 
