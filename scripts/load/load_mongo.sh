@@ -29,7 +29,6 @@ RETRYABLE_WRITES=${RETRYABLE_WRITES:-true}
 ORDERED_INSERTS=${ORDERED_INSERTS:-true}
 RANDOM_FIELD_ORDER=${RANDOM_FIELD_ORDER:-false}
 BATCH_META_FIELDS=${BATCH_META_FIELDS:-true}
-META_FIELD_INDEX=${META_FIELD_INDEX:-"tags"}
 GRANULARITY=${GRANULARITY:-"seconds"}
 
 cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
@@ -43,7 +42,7 @@ cat ${DATA_FILE} | gunzip | $EXE_FILE_NAME \
                                 --retryable-writes=${RETRYABLE_WRITES} \
                                 --ordered-inserts=${ORDERED_INSERTS} \
                                 --random-field-order=${RANDOM_FIELD_ORDER} \
-                                  --batch-meta-fields=${BATCH_META_FIELDS} \
+                                --batch-meta-fields=${BATCH_META_FIELDS} \
                                 --reporting-period=${PROGRESS_INTERVAL} \
                                 --collection-sharded=${COLLECTION_SHARDED} \
                                 --number-initial-chunks=${NUMBER_INITIAL_CHUNKS} \

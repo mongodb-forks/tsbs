@@ -1,9 +1,9 @@
 package load
 
 import (
-		"fmt"
-		"github.com/timescale/tsbs/pkg/targets"
-		tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
+	"fmt"
+	"github.com/timescale/tsbs/pkg/targets"
+	tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
 
 // scanWithoutFlowControl reads data from the DataSource ds until a limit is reached (if -1, all items are read).
