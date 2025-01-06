@@ -1,7 +1,6 @@
 package load
 
 import (
-	"fmt"
 	"github.com/timescale/tsbs/pkg/targets"
 	tsbsMongo "github.com/timescale/tsbs/pkg/targets/mongo"
 )
