@@ -27,7 +27,7 @@ func (l *noFlowBenchmarkRunner) RunBenchmark(b targets.Benchmark) {
 		go l.work(b, wg, channels[i%numChannels], i)
 	}
 	// Start scan process - actual data read process
-	scanWithoutFlowControl(b.GetDataSource(), b.GetPointIndexer(numChannels), b.GetBatchFactory(), channels, l.BatchSize, l.Limit)
+	scanWithoutFlowControl(b.GetDataSource(), b.GetPointIndexer(numChannels), b.GetBatchFactory(), channels, l.BatchSize, l.Limit, l.BenchmarkRunnerConfig.BatchMetaFields, l.BenchmarkRunnerConfig.MetaFieldIndex)
 	for _, c := range channels {
 		close(c)
 	}

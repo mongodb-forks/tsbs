@@ -262,12 +262,12 @@ func TestScanWithIndexer(t *testing.T) {
 						t.Errorf("%s: did not panic when should", c.desc)
 					}
 				}()
-				scanWithFlowControl(channels, c.batchSize, c.limit, testDataSource, &testFactory{}, indexer)
+				scanWithFlowControl(channels, c.batchSize, c.limit, testDataSource, &testFactory{}, indexer, false, "")
 			}()
 			continue
 		} else {
 			go _boringWorker(channels[0])
-			read := scanWithFlowControl(channels, c.batchSize, c.limit, testDataSource, &testFactory{}, indexer)
+			read := scanWithFlowControl(channels, c.batchSize, c.limit, testDataSource, &testFactory{}, indexer, false, "")
 			_checkScan(t, c.desc, testDataSource.called, read, c.wantCalls)
 		}
 	}

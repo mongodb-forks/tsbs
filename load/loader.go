@@ -47,6 +47,8 @@ type BenchmarkRunnerConfig struct {
 	// deprecated, should not be used in other places other than tsbs_load_xx commands
 	FileName string `yaml:"file" mapstructure:"file" json:"file"`
 	Seed     int64  `yaml:"seed" mapstructure:"seed" json:"seed"`
+	BatchMetaFields  bool   `mapstructure:"batch-meta-fields"`
+	MetaFieldIndex 	 string `mapstructure:"meta-field-index"`
 }
 
 // AddToFlagSet adds command line flags needed by the BenchmarkRunnerConfig to the flag set.
@@ -199,7 +201,7 @@ func (l *CommonBenchmarkRunner) RunBenchmark(b targets.Benchmark) {
 	}
 
 	// Start scan process - actual data read process
-	scanWithFlowControl(channels, l.BatchSize, l.Limit, b.GetDataSource(), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))))
+	scanWithFlowControl(channels, l.BatchSize, l.Limit, b.GetDataSource(), b.GetBatchFactory(), b.GetPointIndexer(uint(len(channels))), l.BenchmarkRunnerConfig.BatchMetaFields, l.BenchmarkRunnerConfig.MetaFieldIndex)
 	// After scan process completed (no more data to come) - begin shutdown process
 
 	// Close all communication channels to/from workers

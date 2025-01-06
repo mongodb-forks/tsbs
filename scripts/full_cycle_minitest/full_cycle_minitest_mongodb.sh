@@ -20,7 +20,7 @@ $GOPATH/bin/tsbs_generate_queries --queries=${MAX_QUERIES} --format mongo --use-
 $GOPATH/bin/tsbs_generate_queries --queries=${MAX_QUERIES} --format mongo --use-case cpu-only --scale 10 --seed 123 --query-type groupby-orderby-limit --file /tmp/bulk_data/mongo_query_groupby-orderby-limit
 
 # insert benchmark
-$GOPATH/bin/tsbs_load_mongo --db-name=benchmark --batch-size=100 --workers=1 --document-per-event=true --timeseries-collection=true --retryable-writes=false --random-field-order=false --file=/tmp/bulk_data/mongo_data --results-file="mongo_load_results.json"
+$GOPATH/bin/tsbs_load_mongo --db-name=benchmark --batch-size=100 --workers=1 --document-per-event=true --timeseries-collection=true --retryable-writes=false --random-field-order=false --batch-meta-fields=true --file=/tmp/bulk_data/mongo_data --results-file="mongo_load_results.json"
 
 # queries benchmark
 $GOPATH/bin/tsbs_run_queries_mongo --max-rps=${MAX_RPS} --hdr-latencies="${MAX_RPS}rps_mongo_query_lastpoint.hdr" --db-name=benchmark --workers=1 --max-queries=${MAX_QUERIES} --file=/tmp/bulk_data/mongo_query_lastpoint --results-file="mongo_query_lastpoint_results.json"

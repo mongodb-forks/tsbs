@@ -87,7 +87,7 @@ func TestScanWithoutFlowControl(t *testing.T) {
 							t.Errorf("%s: did not panic when should", c.desc)
 						}
 					}()
-					scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit)
+					scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit, false)
 				}()
 				return
 			} else {
@@ -96,7 +96,7 @@ func TestScanWithoutFlowControl(t *testing.T) {
 				for i := uint(0); i < c.numChannels; i++ {
 					go _boringWorkerSingleChannel(channels[i], &channelCalls[i], wg)
 				}
-				read := scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit)
+				read := scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit, false, "")
 				for i := uint(0); i < c.numChannels; i++ {
 					close(channels[i])
 				}

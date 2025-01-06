@@ -78,6 +78,10 @@ If true, measurements will be inserted with {ordered: true}, or {ordered: false}
 
 Whether measurements will be inserted with random or deterministic field order.
 
+#### `-batch-meta-fields` (type: `boolean`, default: `true`)
+
+Whether measurements in the same batch will be inserted with the same meta field.
+
 ---
 
 ## `tsbs_run_queries_mongo` Additional Flags

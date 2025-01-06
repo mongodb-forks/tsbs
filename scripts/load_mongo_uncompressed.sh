@@ -28,6 +28,7 @@ TIMESERIES_COLLECTION=${TIMESERIES_COLLECTION:-false}
 RETRYABLE_WRITES=${RETRYABLE_WRITES:-true}
 ORDERED_INSERTS=${ORDERED_INSERTS:-true}
 RANDOM_FIELD_ORDER=${RANDOM_FIELD_ORDER:-false}
+BATCH_META_FIELDS=${BATCH_META_FIELDS:-true}
 
 cat ${DATA_FILE} | $EXE_FILE_NAME \
                        --url=${MONGO_URL} \
@@ -39,6 +40,7 @@ cat ${DATA_FILE} | $EXE_FILE_NAME \
                        --retryable-writes=${RETRYABLE_WRITES} \
                        --ordered-inserts=${ORDERED_INSERTS} \
                        --random-field-order=${RANDOM_FIELD_ORDER} \
+                        --batch-meta-fields=${BATCH_META_FIELDS} \
                        --reporting-period=${PROGRESS_INTERVAL} \
                        --collection-sharded=${COLLECTION_SHARDED} \
                        --number-initial-chunks=${NUMBER_INITIAL_CHUNKS} \
