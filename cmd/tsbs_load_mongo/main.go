@@ -88,7 +88,7 @@ func init() {
 	if documentPer  {
 		config.HashWorkers = false
 	} else {
-		config.HashWorker = true
+		config.HashWorkers = true
 	}
 
 	if batchMetaFields {
