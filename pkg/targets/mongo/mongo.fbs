@@ -1,8 +1,22 @@
 // mongo.fbs
-namespace serialize;
+// namespace serialize;
+namespace mongo;
+
+table MongoStringTag {
+  value: string;
+}
+
+table MongoFloat32Tag {
+  value: float;
+}
+
+union MongoTagValue {
+  MongoStringTag, MongoFloat32Tag
+}
+
 table MongoTag {
   key:string;
-  value:string;
+  value: MongoTagValue;
 }
 
 table MongoReading {

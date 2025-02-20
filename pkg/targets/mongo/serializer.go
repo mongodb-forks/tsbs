@@ -6,8 +6,8 @@ import (
 	"github.com/timescale/tsbs/pkg/data"
 	"io"
 	"sync"
-
 	flatbuffers "github.com/google/flatbuffers/go"
+	"os"
 )
 
 var fbBuilderPool = &sync.Pool{
@@ -30,20 +30,35 @@ func (s *Serializer) Serialize(p *data.Point, w io.Writer) (err error) {
 	tagKeys := p.TagKeys()
 	tagValues := p.TagValues()
 	for i := len(tagKeys); i > 0; i-- {
+		var tagType MongoTagValue 
+		var tagElement flatbuffers.UOffsetT 
 		switch v := tagValues[i-1].(type) {
 		case string:
-			k := string(tagKeys[i-1])
-			key := b.CreateString(k)
 			val := b.CreateString(v)
-			MongoTagStart(b)
-			MongoTagAddKey(b, key)
-			MongoTagAddValue(b, val)
-			tags = append(tags, MongoTagEnd(b))
+			MongoStringTagStart(b)
+			MongoStringTagAddValue(b, val)
+			tagType = MongoTagValueMongoStringTag
+			tagElement = MongoStringTagEnd(b)
 		case nil:
 			continue
+		case float32:
+			vv := tagValues[i-1]
+			MongoFloat32TagStart(b)
+			MongoFloat32TagAddValue(b, vv.(float32))
+			tagType = MongoTagValueMongoFloat32Tag
+			tagElement = MongoFloat32TagEnd(b)
 		default:
-			panic("non-string tags not implemented for mongo db")
+			fmt.Fprintf(os.Stderr, "non-string tags not implemented for mongo db: %s\n", v)
+			//	continue
+		 	panic("non-string, non-float tags not implemented for mongo db")
 		}
+		k := string(tagKeys[i-1])
+		key := b.CreateString(k)
+		MongoTagStart(b)
+		MongoTagAddKey(b, key)
+		MongoTagAddValueType(b, tagType)
+		MongoTagAddValue(b, tagElement)
+		tags = append(tags, MongoTagEnd(b))
 	}
 	MongoPointStartTagsVector(b, len(tags))
 	for _, t := range tags {
