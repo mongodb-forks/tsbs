@@ -212,11 +212,56 @@ func (g *QueryGenerator) getUseCaseGenerator(c *config.QueryGeneratorConfig) (qu
 	}
 }
 
+// queryEncoder abstracts the encoding of a query to either gob or JSONL format.
+type queryEncoder interface {
+	Encode(q queryUtils.Query) error
+}
+
+// gobQueryEncoder encodes queries using Go's gob format (the original default).
+type gobQueryEncoder struct {
+	enc *gob.Encoder
+}
+
+func (e *gobQueryEncoder) Encode(q queryUtils.Query) error {
+	return e.enc.Encode(q)
+}
+
+// jsonlQueryEncoder encodes queries as JSON Lines using MongoDB Extended JSON.
+// Only supported for query types that implement the ToExtJSON method (e.g. Mongo queries).
+type jsonlQueryEncoder struct {
+	w *bufio.Writer
+}
+
+func (e *jsonlQueryEncoder) Encode(q queryUtils.Query) error {
+	type extJSONer interface {
+		ToExtJSON() ([]byte, error)
+	}
+	mq, ok := q.(extJSONer)
+	if !ok {
+		return fmt.Errorf("jsonl output format is only supported for query types that implement ToExtJSON (e.g. Mongo queries)")
+	}
+	data, err := mq.ToExtJSON()
+	if err != nil {
+		return err
+	}
+	if _, err = e.w.Write(data); err != nil {
+		return err
+	}
+	_, err = e.w.Write([]byte("\n"))
+	return err
+}
+
 func (g *QueryGenerator) runQueryGeneration(useGen queryUtils.QueryGenerator, filler queryUtils.QueryFiller, c *config.QueryGeneratorConfig) error {
 	stats := make(map[string]int64)
 	currentGroup := uint(0)
-	enc := gob.NewEncoder(g.bufOut)
 	defer g.bufOut.Flush()
+
+	var enc queryEncoder
+	if c.OutputFormat == "jsonl" {
+		enc = &jsonlQueryEncoder{w: g.bufOut}
+	} else {
+		enc = &gobQueryEncoder{enc: gob.NewEncoder(g.bufOut)}
+	}
 
 	rand.Seed(g.conf.Seed)
 	//fmt.Println(g.config.Seed)

@@ -57,6 +57,16 @@ TS_END=${TS_END:-"2016-01-04T00:00:01Z"}
 # What set of data to generate: devops (multiple data), cpu-only (cpu-usage data)
 USE_CASE=${USE_CASE:-"cpu-only"}
 
+# Output serialization format: "gob" (default, binary) or "jsonl" (JSON Lines)
+OUTPUT_FORMAT=${OUTPUT_FORMAT:-"gob"}
+
+# Determine file extension based on output format
+if [ "${OUTPUT_FORMAT}" == "jsonl" ]; then
+    FILE_EXT="jsonl.gz"
+else
+    FILE_EXT="dat.gz"
+fi
+
 # Ensure DATA DIR available
 mkdir -p ${BULK_DATA_DIR}
 chmod a+rwx ${BULK_DATA_DIR}
@@ -67,7 +77,7 @@ set -eo pipefail
 # Loop over all requested queries types and generate data
 for QUERY_TYPE in ${QUERY_TYPES}; do
     for FORMAT in ${FORMATS}; do
-        DATA_FILE_NAME="queries_${FORMAT}_${QUERY_TYPE}_${EXE_FILE_VERSION}_${QUERIES}_${SCALE}_${SEED}_${TS_START}_${TS_END}_${USE_CASE}.dat.gz"
+        DATA_FILE_NAME="queries_${FORMAT}_${QUERY_TYPE}_${EXE_FILE_VERSION}_${QUERIES}_${SCALE}_${SEED}_${TS_START}_${TS_END}_${USE_CASE}.${FILE_EXT}"
         if [ -f "${DATA_FILE_NAME}" ]; then
             echo "WARNING: file ${DATA_FILE_NAME} already exists, skip generating new data"
         else
@@ -87,6 +97,7 @@ for QUERY_TYPE in ${QUERY_TYPES}; do
                 --timestamp-start ${TS_START} \
                 --timestamp-end ${TS_END} \
                 --use-case ${USE_CASE} \
+                --output-format ${OUTPUT_FORMAT} \
                 --timescale-use-json=${USE_JSON} \
                 --timescale-use-tags=${USE_TAGS} \
                 --timescale-use-time-bucket=${USE_TIME_BUCKET} \

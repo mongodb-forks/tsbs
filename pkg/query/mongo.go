@@ -1,9 +1,11 @@
 package query
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -68,4 +70,34 @@ func (q *Mongo) Release() {
 	q.Pipeline = nil
 
 	MongoPool.Put(q)
+}
+
+// mongoQueryJSON is the JSON-serializable representation of a Mongo query.
+type mongoQueryJSON struct {
+	Label      string            `json:"label"`
+	Collection string            `json:"collection"`
+	Pipeline   []json.RawMessage `json:"pipeline"`
+}
+
+// ToExtJSON serializes the Mongo query as a JSON object using MongoDB Extended JSON
+// for the pipeline stages. The output is suitable for consumption by pymongo's
+// bson.json_util.loads().
+func (q *Mongo) ToExtJSON() ([]byte, error) {
+	stages := make([]json.RawMessage, len(q.Pipeline))
+	for i, stage := range q.Pipeline {
+		// Each stage is a bson.D. MarshalExtJSON produces Extended JSON
+		// which preserves types like $date for time.Time values.
+		extJSON, err := bson.MarshalExtJSON(stage, false, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal pipeline stage %d: %w", i, err)
+		}
+		stages[i] = extJSON
+	}
+
+	out := mongoQueryJSON{
+		Label:      string(q.HumanLabel),
+		Collection: string(q.CollectionName),
+		Pipeline:   stages,
+	}
+	return json.Marshal(out)
 }
