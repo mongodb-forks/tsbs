@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -466,6 +467,73 @@ func checkGeneratedOutput(t *testing.T, buf *bytes.Buffer) {
 	}
 }
 
+// checkJSONLOutput validates JSONL-encoded query output.
+// It checks that each line is valid JSON with the required fields:
+// label, collection, and pipeline (non-empty array).
+func checkJSONLOutput(t *testing.T, buf *bytes.Buffer, expectedCount int) {
+	scanner := bufio.NewScanner(buf)
+	lineCount := 0
+	
+	for scanner.Scan() {
+		lineCount++
+		line := scanner.Text()
+		
+		// Skip empty lines
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		
+		// Parse JSON
+		var queryJSON map[string]interface{}
+		err := json.Unmarshal([]byte(line), &queryJSON)
+		if err != nil {
+			t.Errorf("failed to parse JSON on line %d: %v\nLine: %s", lineCount, err, line)
+			continue
+		}
+		
+		// Validate required fields
+		label, hasLabel := queryJSON["label"]
+		if !hasLabel {
+			t.Errorf("missing 'label' field on line %d", lineCount)
+		} else if labelStr, ok := label.(string); !ok || labelStr == "" {
+			t.Errorf("'label' field is not a non-empty string on line %d", lineCount)
+		}
+		
+		collection, hasCollection := queryJSON["collection"]
+		if !hasCollection {
+			t.Errorf("missing 'collection' field on line %d", lineCount)
+		} else if collStr, ok := collection.(string); !ok || collStr == "" {
+			t.Errorf("'collection' field is not a non-empty string on line %d", lineCount)
+		}
+		
+		// Validate pipeline field exists and is a non-empty array
+		pipeline, hasPipeline := queryJSON["pipeline"]
+		if !hasPipeline {
+			t.Errorf("missing 'pipeline' field on line %d", lineCount)
+			continue
+		}
+		
+		pipelineArray, ok := pipeline.([]interface{})
+		if !ok {
+			t.Errorf("'pipeline' field is not an array on line %d", lineCount)
+			continue
+		}
+		
+		if len(pipelineArray) == 0 {
+			t.Errorf("'pipeline' field is empty on line %d", lineCount)
+		}
+	}
+	
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("error reading output: %v", err)
+	}
+	
+	// Verify we got the expected number of queries
+	if lineCount != expectedCount {
+		t.Errorf("incorrect number of queries: got %d want %d", lineCount, expectedCount)
+	}
+}
+
 func TestQueryGeneratorRunQueryGeneration(t *testing.T) {
 	seedLine := "using random seed 123"
 	summaryLine := "TimescaleDB 1 cpu metric(s), random    1 hosts, random 1h0m0s by 1m: 3 points"
@@ -623,3 +691,61 @@ func TestQueryGeneratorGenerate(t *testing.T) {
 	}
 	checkGeneratedOutput(t, &buf)
 }
+
+func TestJSONLEncoder(t *testing.T) {
+	// Set up config for MongoDB with JSONL output
+	tsStart, _ := internalUtils.ParseUTCTime(defaultTimeStart)
+	tsEnd, _ := internalUtils.ParseUTCTime(defaultTimeEnd)
+	tsEnd = tsEnd.Add(time.Second)
+	
+	c := &config.QueryGeneratorConfig{
+		BaseConfig: common.BaseConfig{
+			Format:    constants.FormatMongo,
+			Use:       common.UseCaseCPUOnly,
+			Scale:     10,
+			TimeStart: defaultTimeStart,
+			TimeEnd:   strings.Replace(defaultTimeEnd, ":00Z", ":01Z", 1),
+			Seed:      123,
+		},
+		Limit:                3,
+		QueryType:            "single-groupby-1-1-1",
+		OutputFormat:         "jsonl",
+		InterleavedNumGroups: 1,
+	}
+	
+	g := &QueryGenerator{
+		useCaseMatrix: map[string]map[string]queryUtils.QueryFillerMaker{
+			common.UseCaseCPUOnly: {
+				"single-groupby-1-1-1": devops.NewSingleGroupby(1, 1, 1),
+			},
+		},
+		conf:      c,
+		tsStart:   tsStart,
+		tsEnd:     tsEnd,
+		DebugOut:  os.Stderr,
+		factories: make(map[string]interface{}),
+	}
+	
+	err := g.init(c)
+	if err != nil {
+		t.Fatalf("Error initializing query generator: %s", err)
+	}
+	
+	var buf bytes.Buffer
+	g.bufOut = bufio.NewWriter(&buf)
+	
+	useGen, err := g.getUseCaseGenerator(c)
+	if err != nil {
+		t.Fatalf("could not get use case gen: %v", err)
+	}
+	filler := g.useCaseMatrix[c.Use][c.QueryType](useGen)
+	
+	err = g.runQueryGeneration(useGen, filler, c)
+	if err != nil {
+		t.Errorf("unexpected error: got %v", err)
+	}
+	
+	// Validate JSONL output
+	checkJSONLOutput(t, &buf, 3)
+}
+
