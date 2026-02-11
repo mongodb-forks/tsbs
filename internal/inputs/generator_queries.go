@@ -13,6 +13,7 @@ import (
 	queryUtils "github.com/timescale/tsbs/cmd/tsbs_generate_queries/utils"
 	internalUtils "github.com/timescale/tsbs/internal/utils"
 	"github.com/timescale/tsbs/pkg/data/usecases/common"
+	"github.com/timescale/tsbs/pkg/query"
 	"github.com/timescale/tsbs/pkg/query/config"
 	"github.com/timescale/tsbs/pkg/query/factories"
 )
@@ -214,7 +215,7 @@ func (g *QueryGenerator) getUseCaseGenerator(c *config.QueryGeneratorConfig) (qu
 
 // queryEncoder abstracts the encoding of a query to either gob or JSONL format.
 type queryEncoder interface {
-	Encode(q queryUtils.Query) error
+	Encode(q query.Query) error
 }
 
 // gobQueryEncoder encodes queries using Go's gob format (the original default).
@@ -222,7 +223,7 @@ type gobQueryEncoder struct {
 	enc *gob.Encoder
 }
 
-func (e *gobQueryEncoder) Encode(q queryUtils.Query) error {
+func (e *gobQueryEncoder) Encode(q query.Query) error {
 	return e.enc.Encode(q)
 }
 
@@ -232,7 +233,7 @@ type jsonlQueryEncoder struct {
 	w *bufio.Writer
 }
 
-func (e *jsonlQueryEncoder) Encode(q queryUtils.Query) error {
+func (e *jsonlQueryEncoder) Encode(q query.Query) error {
 	type extJSONer interface {
 		ToExtJSON() ([]byte, error)
 	}
