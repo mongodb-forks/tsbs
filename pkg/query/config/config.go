@@ -21,6 +21,10 @@ type QueryGeneratorConfig struct {
 	InterleavedGroupID   uint   `mapstructure:"interleaved-generation-group-id"`
 	InterleavedNumGroups uint   `mapstructure:"interleaved-generation-groups"`
 
+	// OutputFormat controls the serialization format for generated queries.
+	// Supported values: "gob" (default, binary) and "jsonl" (JSON Lines, one JSON object per query).
+	OutputFormat string `mapstructure:"output-format"`
+
 	// TODO - I think this needs some rethinking, but a simple, elegant solution escapes me right now
 	TimescaleUseJSON       bool `mapstructure:"timescale-use-json"`
 	TimescaleUseTags       bool `mapstructure:"timescale-use-tags"`
@@ -43,6 +47,13 @@ func (c *QueryGeneratorConfig) Validate() error {
 		return fmt.Errorf(ErrEmptyQueryType)
 	}
 
+	if c.OutputFormat == "" {
+		c.OutputFormat = "gob"
+	}
+	if c.OutputFormat != "gob" && c.OutputFormat != "jsonl" {
+		return fmt.Errorf("invalid output format '%s': must be 'gob' or 'jsonl'", c.OutputFormat)
+	}
+
 	err = utils.ValidateGroups(c.InterleavedGroupID, c.InterleavedNumGroups)
 	return err
 }
@@ -56,6 +67,8 @@ func (c *QueryGeneratorConfig) AddToFlagSet(fs *pflag.FlagSet) {
 		"Group (0-indexed) to perform round-robin serialization within. Use this to scale up data generation to multiple processes.")
 	fs.Uint("interleaved-generation-groups", 1,
 		"The number of round-robin serialization groups. Use this to scale up data generation to multiple processes.")
+
+	fs.String("output-format", "gob", "Output serialization format for generated queries. Choices: gob, jsonl")
 
 	fs.Bool("clickhouse-use-tags", true, "ClickHouse only: Use separate tags table when querying")
 	fs.Bool("mongo-use-naive", true, "MongoDB only: Generate queries for the 'naive' data storage format for Mongo")
