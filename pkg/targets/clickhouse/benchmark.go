@@ -16,11 +16,14 @@ type ClickhouseConfig struct {
 	Host     string
 	User     string
 	Password string
+	Port     int
 
 	LogBatches bool
 	InTableTag bool
 	Debug      int
 	DbName     string
+	Secure     bool
+	SkipVerify bool
 }
 
 // String values of tags and fields to insert - string representation
@@ -43,10 +46,10 @@ func getConnectString(conf *ClickhouseConfig, db bool) string {
 	// ClickHouse ex.:
 	// tcp://host1:9000?username=user&password=qwerty&database=clicks&read_timeout=10&write_timeout=20&alt_hosts=host2:9000,host3:9000
 	if db {
-		return fmt.Sprintf("tcp://%s:9000?username=%s&password=%s&database=%s", conf.Host, conf.User, conf.Password, conf.DbName)
+		return fmt.Sprintf("tcp://%s:%d?username=%s&password=%s&database=%s&secure=%t&skip_verify=%t", conf.Host, conf.Port, conf.User, conf.Password, conf.DbName, conf.Secure, conf.SkipVerify)
 	}
 
-	return fmt.Sprintf("tcp://%s:9000?username=%s&password=%s", conf.Host, conf.User, conf.Password)
+	return fmt.Sprintf("tcp://%s:%d?username=%s&password=%s&secure=%t&skip_verify=%t", conf.Host, conf.Port, conf.User, conf.Password, conf.Secure, conf.SkipVerify)
 }
 
 // Point is a single row of data keyed by which table it belongs

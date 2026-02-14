@@ -196,7 +196,7 @@ func (d *dbCreator) createTableAndIndexes(dbBench *sql.DB, tableName string, fie
 
 	if d.opts.UseHypertable {
 		var creationCommand string = "create_hypertable"
-		var partitionsOption string = "replication_factor => NULL"
+		var partitionsOption string = ""
 
 		MustExec(dbBench, "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE")
 
@@ -212,18 +212,27 @@ func (d *dbCreator) createTableAndIndexes(dbBench *sql.DB, tableName string, fie
 		// We assume a single partition hypertable. This provides an option to test
 		// partitioning on regular hypertables
 		if d.opts.NumberPartitions > 0 {
-			partitionsOption = fmt.Sprintf("partitioning_column => '%s'::name, number_partitions => %v::smallint", partitionColumn, d.opts.NumberPartitions)
+			partitionsOption = fmt.Sprintf("'%s'::name, %v::smallint", partitionColumn, d.opts.NumberPartitions)
 		}
 
 		if d.opts.ReplicationFactor > 0 {
 			// This gives us a future option of testing the impact of
 			// multi-node replication across data nodes
+			creationCommand = "create_distributed_hypertable"
 			partitionsOption = fmt.Sprintf("partitioning_column => '%s'::name, replication_factor => %v::smallint", partitionColumn, d.opts.ReplicationFactor)
 		}
 
 		MustExec(dbBench,
-			fmt.Sprintf("SELECT %s('%s'::regclass, 'time'::name, %s, chunk_time_interval => %d, create_default_indexes=>FALSE)",
-				creationCommand, tableName, partitionsOption, d.opts.ChunkTime.Nanoseconds()/1000))
+			fmt.Sprintf("SELECT %s('%s'::regclass, by_range('time'::name), create_default_indexes=>FALSE)",
+				creationCommand, tableName))
+		MustExec(dbBench,
+			fmt.Sprintf("SELECT set_chunk_time_interval('%s'::regclass, %d)",
+				tableName, d.opts.ChunkTime.Nanoseconds()/1000))
+		if partitionsOption != "" {
+			MustExec(dbBench,
+				fmt.Sprintf("SELECT add_dimension('%s'::regclass, by_range(%s))",
+					tableName, partitionsOption))
+		}
 	}
 }
 

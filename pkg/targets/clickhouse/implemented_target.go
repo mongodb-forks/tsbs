@@ -28,8 +28,11 @@ func (c clickhouseTarget) TargetSpecificFlags(flagPrefix string, flagSet *pflag.
 	flagSet.String(flagPrefix+"host", "localhost", "Hostname of ClickHouse instance")
 	flagSet.String(flagPrefix+"user", "default", "User to connect to ClickHouse as")
 	flagSet.String(flagPrefix+"password", "", "Password to connect to ClickHouse")
+	flagSet.Int(flagPrefix+"port", 9000, "Port of ClickHouse instance")
 	flagSet.Bool(flagPrefix+"log-batches", false, "Whether to time individual batches.")
 	flagSet.Int(flagPrefix+"debug", 0, "Debug printing (choices: 0, 1, 2). (default 0)")
+	flagSet.Bool(flagPrefix+"secure", false, "establish secure connection (default false)")
+	flagSet.Bool(flagPrefix+"skip-verify", false, "skip certificate verification (default false)")
 }
 
 func (c clickhouseTarget) TargetName() string {

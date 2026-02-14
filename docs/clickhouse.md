@@ -38,6 +38,10 @@ cpu,1451606400000000000,58.1317132304976170,2.6224297271376256,24.99694950699478
 
 Hostname of the ClickHouse server.
 
+### `-port` (type: `int`, default: `9000`)
+
+Port of the ClickHouse server. The default port is 9000
+
 #### `-user` (type: `string`, default: `default`)
 
 User to use to connect to the ClickHouse server. Yes, default user is really called **default**
@@ -46,6 +50,13 @@ User to use to connect to the ClickHouse server. Yes, default user is really cal
 
 Password to use to connect to the ClickHouse server. Default password is empty
 
+#### `-secure` (type: `boolean`, default: `false`)
+
+Establish a secure connection. (default is false)
+
+#### `-skip-verify` (type: `boolean`, default: `false`)
+
+Skip certificate verification. (default is false)
 
 ### Miscellaneous
 
@@ -68,6 +79,10 @@ system performance while writing data to the database.
 Comma separated list of hostnames for the ClickHouse servers.
 Workers are connected to a server in a round-robin fashion.
 
+### `-port` (type: `int`, default: `9000`)
+
+Port of the ClickHouse server. The default port is 9000
+
 #### `-user` (type: `string`, default: `default`)
 
 User to use to connect to the ClickHouse server. Yes, default user is really called **default**
@@ -75,6 +90,14 @@ User to use to connect to the ClickHouse server. Yes, default user is really cal
 #### `-password` (type: `string`, default: ``)
 
 Password to use to connect to the ClickHouse server. Default password is empty
+
+#### `-secure` (type: `boolean`, default: `false`)
+
+Establish a secure connection. (default is false)
+
+#### `-skip-verify` (type: `boolean`, default: `false`)
+
+Skip certificate verification. (default is false)
 
 ---
 

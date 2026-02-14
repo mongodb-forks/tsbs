@@ -43,9 +43,12 @@ func init() {
 		Host:       viper.GetString("host"),
 		User:       viper.GetString("user"),
 		Password:   viper.GetString("password"),
+		Port:       viper.GetInt("port"),
 		LogBatches: viper.GetBool("log-batches"),
 		Debug:      viper.GetInt("debug"),
 		DbName:     loaderConf.DBName,
+		Secure:     viper.GetBool("secure"),
+		SkipVerify: viper.GetBool("skip-verify"),
 	}
 
 	loader = load.GetBenchmarkRunner(loaderConf)
