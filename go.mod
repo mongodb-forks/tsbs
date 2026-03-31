@@ -9,13 +9,12 @@ require (
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/aws/aws-sdk-go v1.35.13
 	github.com/blagojts/viper v1.6.3-0.20200313094124-068f44cf5e69
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gocql/gocql v0.0.0-20190810123941-df4b9cc33030
 	github.com/golang/protobuf v1.4.2
-	github.com/golang/snappy v0.0.1
+	github.com/golang/snappy v0.0.4
 	github.com/google/flatbuffers v1.11.0
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.6.0
 	github.com/jackc/pgx/v4 v4.8.0
 	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
 	github.com/kshvakov/clickhouse v1.3.11
@@ -30,9 +29,10 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/transceptor-technology/go-qpack v0.0.0-20190116123619-49a14b216a45
 	github.com/valyala/fasthttp v1.15.1
-	go.mongodb.org/mongo-driver v1.10.0
+	go.mongodb.org/mongo-driver v1.17.9
 	go.uber.org/atomic v1.6.0
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/net v0.25.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

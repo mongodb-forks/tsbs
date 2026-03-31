@@ -87,7 +87,7 @@ func TestScanWithoutFlowControl(t *testing.T) {
 							t.Errorf("%s: did not panic when should", c.desc)
 						}
 					}()
-					scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit, false)
+					scanWithoutFlowControl(testDataSource, indexer, &testFactory{}, channels, c.batchSize, c.limit, false, "")
 				}()
 				return
 			} else {
