@@ -51,6 +51,35 @@ func (p *naiveProcessor) Init(_ int, doLoad, _ bool) {
 	p.pvs = []interface{}{}
 }
 
+func withRetry(ctx context.Context, maxAttempts int, op func(context.Context) error) error {
+    backoff := 100 * time.Millisecond
+
+    for attempt := 1; ; attempt++ {
+        err := op(ctx)
+        if err == nil {
+            return nil
+        }
+
+        // Stop on non‑retryable errors (optional but recommended)
+        //var le mongo.LabeledError
+        //if !errors.As(err, &le) || !le.HasErrorLabel("RetryableError") && !le.HasErrorLabel("RetryableWriteError") {
+        //    return err
+        //}
+
+        // Give up if context is done or attempts exhausted
+        if ctx.Err() != nil || (maxAttempts > 0 && attempt >= maxAttempts) {
+            if ctx.Err() != nil {
+                return ctx.Err()
+            }
+            return err
+        }
+
+        // Simple exponential backoff
+        time.Sleep(backoff)
+        backoff *= 2
+    }
+}
+
 // ProcessBatch creates a new document for each incoming event for a simpler
 // approach to storing the data. This is _NOT_ the default since the aggregation method
 // is recommended by Mongo and other blogs
@@ -105,7 +134,13 @@ func (p *naiveProcessor) ProcessBatch(b targets.Batch, doLoad bool) (uint64, uin
 
 	if doLoad {
 		opts := options.InsertMany().SetOrdered(orderedInserts)
-		_, err := p.collection.InsertMany(context.Background(), p.pvs, opts)
+        ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+        defer cancel()
+		//_, err := p.collection.InsertMany(ctx, p.pvs, opts)
+        err := withRetry(ctx, 0, func(c context.Context) error {
+		    _, err := p.collection.InsertMany(ctx, p.pvs, opts)
+            return err
+        })
 		if err != nil {
 			log.Fatalf("Bulk insert docs err: %s\n", err.Error())
 		}
