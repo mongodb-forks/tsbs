@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/blagojts/viper"
@@ -31,8 +32,11 @@ var (
 	daemonURL            string
 	documentPer          bool
 	writeTimeout         time.Duration
+	socketTimeout        time.Duration
+	maxPerWriteRetryTime     time.Duration
 	timeseriesCollection bool
 	retryableWrites      bool
+	deterministicIDs     bool
 	orderedInserts       bool
 	randomFieldOrder     bool
 	batchMetaFields		 bool
@@ -72,9 +76,12 @@ func init() {
 
 	daemonURL = viper.GetString("url")
 	writeTimeout = viper.GetDuration("write-timeout")
+	socketTimeout = viper.GetDuration("socket-timeout")
+	maxPerWriteRetryTime = viper.GetDuration("max-per-write-retry-time")
 	documentPer = viper.GetBool("document-per-event")
 	timeseriesCollection = viper.GetBool("timeseries-collection")
 	retryableWrites = viper.GetBool("retryable-writes")
+	deterministicIDs = viper.GetBool("deterministic-ids")
 	orderedInserts = viper.GetBool("ordered-inserts")
 	randomFieldOrder = viper.GetBool("random-field-order")
 	batchMetaFields = viper.GetBool("batch-meta-fields")
@@ -101,6 +108,10 @@ func init() {
 		log.Fatal("Must set document-per-event=true in order to use timeseries-collection=true")
 	}
 
+	if !documentPer && deterministicIDs {
+		log.Fatal("deterministic-ids is only supported with document-per-event=true")
+	}
+
 	if !timeseriesCollection && batchMetaFields {
 		log.Fatal("Must set document-per-event=true and timeseries-collection=true in order to use batch-meta-fields=true")
 	} 
@@ -125,4 +136,14 @@ func main() {
 	}
 
 	loader.RunBenchmark(benchmark)
+
+	// code for the not fatal logging workaround 
+
+	// If any worker recorded a terminal write error exit non-zero now that the summary line has
+	// already been printed. This keeps downstream result parsers happy while still
+	// surfacing the failure to callers that inspect the exit code.
+	if err := loadError(); err != nil {
+		log.Printf("tsbs_load_mongo completed with load errors: %s", err.Error())
+		os.Exit(3)
+	}
 }

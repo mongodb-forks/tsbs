@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,14 @@ type dbCreator struct {
 
 func (d *dbCreator) Init() {
 	var err error
-	opts := options.Client().ApplyURI(daemonURL).SetSocketTimeout(writeTimeout).SetRetryWrites(retryableWrites)
+	serverSelectionTimeout := 30 * time.Second
+	opts := options.Client().ApplyURI(daemonURL).
+		SetSocketTimeout(socketTimeout).
+		SetServerSelectionTimeout(serverSelectionTimeout).
+		SetRetryWrites(retryableWrites)
+
+	log.Printf("mongo client: retryWrites=%t socketTimeout=%s serverSelectionTimeout=%s writeTimeout=%s maxPerWriteRetryTime=%s deterministicIDs=%t",
+		retryableWrites, socketTimeout, serverSelectionTimeout, writeTimeout, maxPerWriteRetryTime, deterministicIDs)
 	d.client, err = mongo.Connect(context.Background(), opts)
 	if err != nil {
 		log.Fatal(err)
