@@ -21,9 +21,13 @@ type mongoTarget struct {
 func (t *mongoTarget) TargetSpecificFlags(flagPrefix string, flagSet *pflag.FlagSet) {
 	flagSet.String(flagPrefix+"url", "mongodb://localhost:27017/", "Mongo URL.")
 	flagSet.Duration(flagPrefix+"write-timeout", 10*time.Second, "Write timeout.")
+	flagSet.Duration(flagPrefix+"socket-timeout", 10*time.Second, "Mongo client SocketTimeout. Bounds how long the driver waits on a single socket read/write before giving up.")
+	flagSet.Duration(flagPrefix+"server-selection-timeout", 90*time.Second, "Mongo client ServerSelectionTimeout. How long the driver waits to find a suitable server (e.g. a primary) before returning an error. Must be >= expected replica-set election time.")
 	flagSet.Bool(flagPrefix+"document-per-event", false, "Whether to use one document per event or aggregate by hour")
 	flagSet.Bool(flagPrefix+"timeseries-collection", false, "Whether to use a time-series collection")
 	flagSet.Bool(flagPrefix+"retryable-writes", true, "Whether to use retryable writes")
+	flagSet.Duration(flagPrefix+"max-per-write-retry-time", 0, "Total wall-clock time to keep retrying a failed write (e.g. across a replica-set failover) before giving up, as a Go duration (e.g. 30s, 5m). Set to 0 to disable retries.")
+	flagSet.Bool(flagPrefix+"deterministic-ids", false, "Assign a deterministic _id (SHA256-prefix of host+measurement+timestamp_ns) to each document so writes are idempotent across retries. Enables recovery from driver panics and partial-batch failures during replica-set failovers, at the cost of added client-side CPU and changed primary-key index shape vs. the default server-generated ObjectID. Only applies with document-per-event=true.")
 	flagSet.Bool(flagPrefix+"ordered-inserts", true, "Whether to use ordered inserts")
 	flagSet.Bool(flagPrefix+"random-field-order", true, "Whether to use random field order")
 	flagSet.Bool(flagPrefix+"batch-meta-fields", true, "Whether to use ensure batches of data have the same meta field")
