@@ -22,6 +22,7 @@ func (t *mongoTarget) TargetSpecificFlags(flagPrefix string, flagSet *pflag.Flag
 	flagSet.String(flagPrefix+"url", "mongodb://localhost:27017/", "Mongo URL.")
 	flagSet.Duration(flagPrefix+"write-timeout", 10*time.Second, "Write timeout.")
 	flagSet.Duration(flagPrefix+"socket-timeout", 10*time.Second, "Mongo client SocketTimeout. Bounds how long the driver waits on a single socket read/write before giving up.")
+	flagSet.Duration(flagPrefix+"server-selection-timeout", 90*time.Second, "Mongo client ServerSelectionTimeout. How long the driver waits to find a suitable server (e.g. a primary) before returning an error. Must be >= expected replica-set election time.")
 	flagSet.Bool(flagPrefix+"document-per-event", false, "Whether to use one document per event or aggregate by hour")
 	flagSet.Bool(flagPrefix+"timeseries-collection", false, "Whether to use a time-series collection")
 	flagSet.Bool(flagPrefix+"retryable-writes", true, "Whether to use retryable writes")

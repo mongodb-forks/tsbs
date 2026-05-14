@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,7 +17,6 @@ type dbCreator struct {
 
 func (d *dbCreator) Init() {
 	var err error
-	serverSelectionTimeout := 30 * time.Second
 	opts := options.Client().ApplyURI(daemonURL).
 		SetSocketTimeout(socketTimeout).
 		SetServerSelectionTimeout(serverSelectionTimeout).

@@ -29,11 +29,12 @@ const (
 
 // Program option vars:
 var (
-	daemonURL            string
-	documentPer          bool
-	writeTimeout         time.Duration
-	socketTimeout        time.Duration
-	maxPerWriteRetryTime     time.Duration
+	daemonURL              string
+	documentPer            bool
+	writeTimeout           time.Duration
+	socketTimeout          time.Duration
+	serverSelectionTimeout time.Duration
+	maxPerWriteRetryTime   time.Duration
 	timeseriesCollection bool
 	retryableWrites      bool
 	deterministicIDs     bool
@@ -77,6 +78,7 @@ func init() {
 	daemonURL = viper.GetString("url")
 	writeTimeout = viper.GetDuration("write-timeout")
 	socketTimeout = viper.GetDuration("socket-timeout")
+	serverSelectionTimeout = viper.GetDuration("server-selection-timeout")
 	maxPerWriteRetryTime = viper.GetDuration("max-per-write-retry-time")
 	documentPer = viper.GetBool("document-per-event")
 	timeseriesCollection = viper.GetBool("timeseries-collection")
