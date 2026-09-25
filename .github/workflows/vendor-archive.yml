@@ -26,7 +26,7 @@ jobs:
           fi
           mkdir archive-copy
           mv "$expected" archive-copy/
-          tar -C archive-copy -xzf "archive-copy/$expected"
+          tar -C archive-copy -xzf "archive-copy/$(basename "$expected")"
           go mod vendor
           diff -r vendor archive-copy/vendor || {
             echo "::error::$expected does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
