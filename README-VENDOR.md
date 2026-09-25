@@ -10,8 +10,16 @@ Rebuild the archive whenever go.mod or go.sum changes, which covers dependency
 additions, updates, and removals:
 
 ```
+./regen-vendor-archive.sh
+git commit
+```
+
+The script runs `go mod vendor`, packs the archive with the correct name, and
+removes the archive for the old hash. Done by hand this is:
+
+```
 go mod vendor
-tar czf tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz vendor
+COPYFILE_DISABLE=1 tar czf tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz vendor
 git add tsbs-vendor-*.tar.gz
 git commit
 ```
