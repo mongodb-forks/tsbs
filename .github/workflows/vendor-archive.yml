@@ -18,17 +18,16 @@ jobs:
 
       - name: Regenerate the vendor tree and compare with the archive
         run: |
-          expected="vendor-archive/tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz"
-          if [ ! -f "$expected" ]; then
-            echo "::error::No vendor archive for the current go.mod. Run 'go mod vendor' and commit:"
-            echo "::error::  COPYFILE_DISABLE=1 tar czf $expected vendor"
+          if [ ! -f vendor-archive/tsbs-vendor.tar.gz ]; then
+            echo "::error::vendor-archive/tsbs-vendor.tar.gz is missing. Run 'go mod vendor' and commit:"
+            echo "::error::  COPYFILE_DISABLE=1 tar czf vendor-archive/tsbs-vendor.tar.gz vendor"
             exit 1
           fi
           mkdir archive-copy
-          mv "$expected" archive-copy/
-          tar -C archive-copy -xzf "archive-copy/$(basename "$expected")"
+          mv vendor-archive/tsbs-vendor.tar.gz archive-copy/
+          tar -C archive-copy -xzf archive-copy/tsbs-vendor.tar.gz
           go mod vendor
           diff -r vendor archive-copy/vendor || {
-            echo "::error::$expected does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
+            echo "::error::vendor-archive/tsbs-vendor.tar.gz does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
             exit 1
           }

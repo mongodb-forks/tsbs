@@ -7,16 +7,7 @@ cd "$(dirname "$0")/.."
 
 go mod vendor
 
-old_archives=$(ls vendor-archive/tsbs-vendor-*.tar.gz 2>/dev/null || true)
-new_archive="vendor-archive/tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz"
+COPYFILE_DISABLE=1 tar czf vendor-archive/tsbs-vendor.tar.gz vendor
 
-COPYFILE_DISABLE=1 tar czf "$new_archive" vendor
-
-for old in $old_archives; do
-  if [ "$old" != "$new_archive" ]; then
-    git rm "$old"
-  fi
-done
-
-git add "$new_archive"
-echo "Staged $new_archive. Commit it together with the go.mod/go.sum change."
+git add vendor-archive/tsbs-vendor.tar.gz
+echo "Staged vendor-archive/tsbs-vendor.tar.gz. Commit it together with the go.mod/go.sum change."
