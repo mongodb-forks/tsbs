@@ -14,19 +14,21 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: "1.24.x"
 
-      - name: Regenerate the vendor archive and compare
+      - name: Regenerate the vendor tree and compare with the archive
         run: |
-          go mod vendor
-          tar czf regenerated.tar.gz vendor
           expected="tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz"
           if [ ! -f "$expected" ]; then
             echo "::error::No vendor archive for the current go.mod. Run 'go mod vendor' and commit:"
             echo "::error::  tar czf $expected vendor"
             exit 1
           fi
-          cmp "$expected" regenerated.tar.gz || {
+          mkdir archive-copy
+          mv "$expected" archive-copy/
+          tar -C archive-copy -xzf "archive-copy/$expected"
+          go mod vendor
+          diff -r vendor archive-copy/vendor || {
             echo "::error::$expected does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
             exit 1
           }
