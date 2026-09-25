@@ -25,7 +25,3 @@ A stale archive is caught by the vendor-archive CI check, which compares it
 against a fresh `go mod vendor` run. Setup fails immediately when the archive
 is missing, so that surfaces in the task log rather than depending on the Go
 module proxy.
-
-The archive must be generated with the same Go version the sys-perf tasks
-use, currently the 1.24.x toolchain shipped in the TSBS folder of the
-dsi-donot-remove S3 bucket.

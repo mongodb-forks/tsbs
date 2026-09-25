@@ -2,13 +2,14 @@ name: vendor-archive
 
 on:
   push:
+    branches: [main]
     paths: ["go.mod", "go.sum", ".github/workflows/vendor-archive.yml", "vendor-archive/**"]
   pull_request:
     paths: ["go.mod", "go.sum", ".github/workflows/vendor-archive.yml", "vendor-archive/**"]
 
 jobs:
   check-archive:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -18,14 +19,8 @@ jobs:
 
       - name: Regenerate the vendor tree and compare with the archive
         run: |
-          if [ ! -f vendor-archive/tsbs-vendor.tar.gz ]; then
-            echo "::error::vendor-archive/tsbs-vendor.tar.gz is missing. Run 'go mod vendor' and commit:"
-            echo "::error::  COPYFILE_DISABLE=1 tar czf vendor-archive/tsbs-vendor.tar.gz vendor"
-            exit 1
-          fi
           mkdir archive-copy
-          mv vendor-archive/tsbs-vendor.tar.gz archive-copy/
-          tar -C archive-copy -xzf archive-copy/tsbs-vendor.tar.gz
+          tar -C archive-copy -xzf vendor-archive/tsbs-vendor.tar.gz
           go mod vendor
           diff -r vendor archive-copy/vendor || {
             echo "::error::vendor-archive/tsbs-vendor.tar.gz does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
