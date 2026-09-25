@@ -1,0 +1,32 @@
+name: vendor-archive
+
+on:
+  push:
+    paths: ["go.mod", "go.sum", ".github/workflows/vendor-archive.yml"]
+  pull_request:
+    paths: ["go.mod", "go.sum", ".github/workflows/vendor-archive.yml"]
+
+jobs:
+  check-archive:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Regenerate the vendor archive and compare
+        run: |
+          go mod vendor
+          tar czf regenerated.tar.gz vendor
+          expected="tsbs-vendor-$(sha256sum go.mod | cut -c1-12).tar.gz"
+          if [ ! -f "$expected" ]; then
+            echo "::error::No vendor archive for the current go.mod. Run 'go mod vendor' and commit:"
+            echo "::error::  tar czf $expected vendor"
+            exit 1
+          fi
+          cmp "$expected" regenerated.tar.gz || {
+            echo "::error::$expected does not match a fresh 'go mod vendor' run for the current go.mod. Regenerate and commit it."
+            exit 1
+          }
