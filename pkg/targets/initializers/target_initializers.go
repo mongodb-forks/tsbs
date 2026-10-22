@@ -1,3 +1,6 @@
+//go:build !mongo_only
+// +build !mongo_only
+
 package initializers
 
 import (

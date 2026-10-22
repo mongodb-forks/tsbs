@@ -8,9 +8,13 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=$(GOCMD) fmt
 
-.PHONY: all generators loaders runners lint fmt checkfmt
+.PHONY: all generators loaders runners mongo lint fmt checkfmt
 
 all: generators loaders runners
+
+mongo:
+	mkdir -p bin
+	$(GOBUILD) -tags mongo_only -o bin/ ./cmd/tsbs_generate_data ./cmd/tsbs_generate_queries ./cmd/tsbs_load_mongo ./cmd/tsbs_run_queries_mongo
 
 generators: tsbs_generate_data \
 			tsbs_generate_queries
