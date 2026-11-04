@@ -52,6 +52,9 @@ func TestDevopsGetHostWhereWithHostnames(t *testing.T) {
 }
 
 func TestDevopsGetHostWhereString(t *testing.T) {
+	// ensure deterministic host selection; golang used to call rand.Seed(1) pre 1.20
+	rand.Seed(1)
+
 	cases := []struct {
 		desc   string
 		nHosts int
